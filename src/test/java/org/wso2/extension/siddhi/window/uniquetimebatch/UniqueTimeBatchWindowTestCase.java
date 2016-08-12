@@ -45,7 +45,6 @@ public class UniqueTimeBatchWindowTestCase {
     public void timeWindowBatchTest1() throws InterruptedException {
 
         SiddhiManager siddhiManager = new SiddhiManager();
-
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "" +
@@ -55,7 +54,6 @@ public class UniqueTimeBatchWindowTestCase {
                 "insert all events into outputStream ;";
 
         ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
-
         executionPlanRuntime.addCallback("query1", new QueryCallback() {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
@@ -82,14 +80,12 @@ public class UniqueTimeBatchWindowTestCase {
         Assert.assertEquals(1, removeEventCount);
         Assert.assertTrue(eventArrived);
         executionPlanRuntime.shutdown();
-
     }
 
     @Test
     public void timeWindowBatchTest2() throws InterruptedException {
 
         SiddhiManager siddhiManager = new SiddhiManager();
-
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "" +
@@ -99,7 +95,6 @@ public class UniqueTimeBatchWindowTestCase {
                 "insert all events into outputStream ;";
 
         ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
-
         executionPlanRuntime.addCallback("query1", new QueryCallback() {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
@@ -138,7 +133,6 @@ public class UniqueTimeBatchWindowTestCase {
     public void timeWindowBatchTest3() throws InterruptedException {
 
         SiddhiManager siddhiManager = new SiddhiManager();
-
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "" +
@@ -148,7 +142,6 @@ public class UniqueTimeBatchWindowTestCase {
                 "insert into outputStream ;";
 
         ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
-
         executionPlanRuntime.addCallback("query1", new QueryCallback() {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
@@ -186,7 +179,6 @@ public class UniqueTimeBatchWindowTestCase {
     public void timeWindowBatchTest4() throws InterruptedException {
 
         SiddhiManager siddhiManager = new SiddhiManager();
-
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "" +
@@ -196,7 +188,6 @@ public class UniqueTimeBatchWindowTestCase {
                 "insert expired events into outputStream ;";
 
         ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
-
         executionPlanRuntime.addCallback("query1", new QueryCallback() {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
@@ -232,7 +223,6 @@ public class UniqueTimeBatchWindowTestCase {
 
     @Test
     public void timeWindowBatchTest5() throws InterruptedException {
-        log.info("timeWindowBatch Test5");
 
         SiddhiManager siddhiManager = new SiddhiManager();
         String streams = "" +
@@ -279,7 +269,6 @@ public class UniqueTimeBatchWindowTestCase {
 
     @Test
     public void timeWindowBatchTest6() throws InterruptedException {
-        log.info("timeWindowBatch Test6");
 
         SiddhiManager siddhiManager = new SiddhiManager();
         String streams = "" +
@@ -328,7 +317,6 @@ public class UniqueTimeBatchWindowTestCase {
     public void timeWindowBatchTest7() throws InterruptedException {
 
         SiddhiManager siddhiManager = new SiddhiManager();
-
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "" +
@@ -373,7 +361,6 @@ public class UniqueTimeBatchWindowTestCase {
         Assert.assertEquals(0, removeEventCount);
         Assert.assertTrue(eventArrived);
         executionPlanRuntime.shutdown();
-
     }
 
 
@@ -381,15 +368,14 @@ public class UniqueTimeBatchWindowTestCase {
     public void timeWindowBatchStartTimeTest() throws InterruptedException {
 
         SiddhiManager siddhiManager = new SiddhiManager();
-
-        String cseEventStream = "define stream cseEventStream (symbol string, price float, volume int);";
+        String cseEventStream = "" +
+                "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "@info(name = 'query1') " +
                 "from cseEventStream#window.unique:timeBatch(symbol,1 sec) " +
                 "select symbol, sum(price) as price,volume" +
                 " insert all events into outputStream ;";
 
         ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
-
         executionPlanRuntime.addCallback("query1", new QueryCallback() {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
@@ -422,11 +408,9 @@ public class UniqueTimeBatchWindowTestCase {
         Thread.sleep(3000);
         inputHandler.send(new Object[]{"WSO2", 60.5f, 7});
         Thread.sleep(5000);
-
         Assert.assertEquals(4, inEventCount);
         Assert.assertEquals(0, removeEventCount);
         Assert.assertTrue(eventArrived);
         executionPlanRuntime.shutdown();
     }
-
 }

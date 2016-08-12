@@ -43,6 +43,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * UniqueTimeBatch window
+ *
+ * @since 1.0.0
+ */
 public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements SchedulingProcessor,
         FindableProcessor {
 
@@ -79,7 +84,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     }
 
     /**
-     * The init method of the WindowProcessor, this method will be called before other methods
+     * The init method of the WindowProcessor, this method will be called before other methods.
      *
      * @param attributeExpressionExecutors the executors of each function parameters
      * @param executionPlanContext         the context of the execution plan
@@ -100,13 +105,13 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                     timeInMilliSeconds = (Long)
                             ((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue();
                 } else {
-                    throw new ExecutionPlanValidationException("UniqueTime window's parameter time should be either" +
-                            " int or long, but found " + attributeExpressionExecutors[0].getReturnType());
+                    throw new ExecutionPlanValidationException("UniqueTimeBatch window's parameter time should be either" +
+                            " int or long, but found " + attributeExpressionExecutors[2].getReturnType());
                 }
             } else {
                 throw new ExecutionPlanValidationException("Unique Time Batch window should have constant " +
                         "for time parameter but found a dynamic attribute "
-                        + attributeExpressionExecutors[0].getClass().getCanonicalName());
+                        + attributeExpressionExecutors[1].getClass().getCanonicalName());
             }
             // isStartTimeEnabled used to set start time
             isStartTimeEnabled = true;
@@ -119,7 +124,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
             }
         } else {
             throw new ExecutionPlanValidationException("Unique Time Batch window should only have two parameters. " +
-                    "(<int|long|time> windowTime), but found " + attributeExpressionExecutors.length
+                    "(<string|int|long|bool|double> attribute, <int> batchWindowTime), but found " + attributeExpressionExecutors.length
                     + " input attributes");
         }
     }
@@ -215,17 +220,19 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
         }
     }
 
+    /**
+     * returns the next emission time based on system clock round time values.
+     *
+     * @param currentTime the current time.
+     * @return next emit time
+     */
     private long getNextEmitTime(long currentTime) {
-        // returns the next emission time based on system clock round time values.
         long elapsedTimeSinceLastEmit = (currentTime - startTime) % timeInMilliSeconds;
         return currentTime + (timeInMilliSeconds - elapsedTimeSinceLastEmit);
     }
 
     /**
-     * This will be called only once and this can be used to acquire
-     * required resources for the processing element.
-     * This will be called after initializing the system and before
-     * starting to process the events.
+     * This will be called after initializing the system and before starting to process the events.
      */
     @Override
     public void start() {
@@ -233,8 +240,6 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     }
 
     /**
-     * This will be called only once and this can be used to release
-     * the acquired resources for processing.
      * This will be called before shutting down the system.
      */
     @Override
@@ -244,7 +249,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
 
     /**
      * Used to collect the serializable state of the processing element, that need to be
-     * persisted for the reconstructing the element to the same state on a different point of time
+     * persisted for the reconstructing the element to the same state on a different point of time.
      *
      * @return stateful objects of the processing element as an array
      */
@@ -294,8 +299,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
 
     /**
      * To construct a finder having the capability of finding events at the processor that corresponds
-     * to the incoming
-     * matchingEvent and the given matching expression logic.
+     * to the incoming matchingEvent and the given matching expression logic.
      *
      * @param expression                  the matching expression
      * @param executionPlanContext        current execution plan context
@@ -317,7 +321,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
 
     /**
      * Used to generate key in oldEventMap to get the old event for current event.
-     * It will oldEventMap key which we give as unique attribute with the event
+     * It will oldEventMap key which we give as unique attribute with the event.
      *
      * @param event the stream event that need to be processed
      */
