@@ -41,6 +41,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * UniqueLengthBatch Window
+ *
+ * @since 1.0.0
+ */
 public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements FindableProcessor {
 
     private int length;
@@ -53,7 +58,7 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
     private ConcurrentHashMap<String, StreamEvent> oldEventMap = new ConcurrentHashMap<>();
 
     /**
-     * The init method of the WindowProcessor, this method will be called before other methods
+     * The init method of the WindowProcessor, this method will be called before other methods.
      *
      * @param attributeExpressionExecutors the executors of each function parameters
      * @param executionPlanContext         the context of the execution plan
@@ -65,14 +70,16 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
         this.eventsToBeExpired = new ComplexEventChunk<>(false);
         if (attributeExpressionExecutors.length == 2) {
             this.variableExpressionExecutors[0] = (VariableExpressionExecutor) attributeExpressionExecutors[0];
-            this.length = (Integer) (((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue());
+            this.length = (Integer)
+                    (((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue());
         } else {
-            throw new ExecutionPlanValidationException("Unique Length batch window should only have Two parameter (<int> windowLength), but found " + attributeExpressionExecutors.length + " input attributes");
+            throw new ExecutionPlanValidationException("Unique Length batch window should only have Two parameter (<int> windowLength), " +
+                    "but found " + attributeExpressionExecutors.length + " input attributes");
         }
     }
 
     /**
-     * The main processing method that will be called upon event arrival
+     * The main processing method that will be called upon event arrival.
      *
      * @param streamEventChunk  the stream event chunk that need to be processed
      * @param nextProcessor     the next processor to which the success events need to be passed
@@ -85,7 +92,6 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
         synchronized (this) {
             ComplexEventChunk<StreamEvent> outputStreamEventChunk = new ComplexEventChunk<StreamEvent>(true);
             long currentTime = executionPlanContext.getTimestampGenerator().currentTime();
-
             while (streamEventChunk.hasNext()) {
                 StreamEvent streamEvent = streamEventChunk.next();
                 StreamEvent clonedStreamEvent = streamEventCloner.copyStreamEvent(streamEvent);
@@ -111,9 +117,11 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
                             oldEventMap.clear();
                             while (currentEventChunk.hasNext()) {
                                 StreamEvent toExpireEvent = currentEventChunk.next();
-                                StreamEvent eventClonedForMap = streamEventCloner.copyStreamEvent(toExpireEvent);
+                                StreamEvent eventClonedForMap = streamEventCloner
+                                        .copyStreamEvent(toExpireEvent);
                                 eventClonedForMap.setType(StreamEvent.Type.EXPIRED);
-                                StreamEvent oldEvent = oldEventMap.put(generateKey(eventClonedForMap), eventClonedForMap);
+                                StreamEvent oldEvent = oldEventMap.put(generateKey(eventClonedForMap),
+                                        eventClonedForMap);
                                 eventsToBeExpired.add(eventClonedForMap);
                                 eventsToBeExpired.reset();
                                 while (eventsToBeExpired.hasNext()) {
@@ -164,7 +172,7 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
 
     /**
      * Used to collect the serializable state of the processing element, that need to be
-     * persisted for the reconstructing the element to the same state on a different point of time
+     * persisted for the reconstructing the element to the same state on a different point of time.
      *
      * @return stateful objects of the processing element as an array
      */
@@ -193,7 +201,6 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
             eventsToBeExpired.add((StreamEvent) state[1]);
             count = (Integer) state[2];
             resetEvent = (StreamEvent) state[3];
-
         } else {
             currentEventChunk.clear();
             currentEventChunk.add((StreamEvent) state[0]);
@@ -206,8 +213,8 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
      * To find events from the processor event pool, that the matches the matchingEvent based on finder logic.
      *
      * @param matchingEvent the event to be matched with the events at the processor
-     * @param finder        the execution element responsible for finding the corresponding events that matches
-     *                      the matchingEvent based on pool of events at Processor
+     * @param finder        the execution element responsible for finding the corresponding events
+     *                      that matches the matchingEvent based on pool of events at Processor
      * @return the matched events
      */
     @Override
@@ -216,16 +223,16 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
     }
 
     /**
-     * To construct a finder having the capability of finding events at the processor that corresponds to the incoming
-     * matchingEvent and the given matching expression logic.
+     * To construct a finder having the capability of finding events at the processor that corresponds
+     * to the incoming matchingEvent and the given matching expression logic.
      *
      * @param expression                  the matching expression
      * @param matchingMetaStateHolder     the meta structure of the incoming matchingEvent
      * @param executionPlanContext        current execution plan context
      * @param variableExpressionExecutors the list of variable ExpressionExecutors already created
      * @param eventTableMap               oldEventMap of event tables
-     * @return finder having the capability of finding events at the processor against the expression and incoming
-     * matchingEvent
+     * @return finder having the capability of finding events at the processor against the expression
+     * and incoming matchingEvent
      */
     @Override
     public Finder constructFinder(Expression expression, MatchingMetaStateHolder matchingMetaStateHolder, ExecutionPlanContext executionPlanContext,
@@ -238,8 +245,8 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
     }
 
     /**
-     * Used to generate key in oldEventMap to get the old event for current event. It will oldEventMap key which we give as unique
-     * attribute with the event
+     * Used to generate key in oldEventMap to get the old event for current event.
+     * It will oldEventMap key which we give as unique attribute with the event.
      *
      * @param event the stream event that need to be processed
      */
