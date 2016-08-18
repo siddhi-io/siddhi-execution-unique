@@ -113,14 +113,32 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                         "for time parameter but found a dynamic attribute "
                         + attributeExpressionExecutors[1].getClass().getCanonicalName());
             }
+        } else if (attributeExpressionExecutors.length == 3) {
+            variableExpressionExecutors[0] = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
+                if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
+                    timeInMilliSeconds = (Integer)
+                            ((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue();
+                } else if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.LONG) {
+                    timeInMilliSeconds = (Long)
+                            ((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue();
+                } else {
+                    throw new ExecutionPlanValidationException("UniqueTimeBatch window's parameter time should be either" +
+                            " int or long, but found " + attributeExpressionExecutors[2].getReturnType());
+                }
+            } else {
+                throw new ExecutionPlanValidationException("Unique Time Batch window should have constant " +
+                        "for time parameter but found a dynamic attribute "
+                        + attributeExpressionExecutors[1].getClass().getCanonicalName());
+            }
             // isStartTimeEnabled used to set start time
             isStartTimeEnabled = true;
-            if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
+            if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.INT) {
                 startTime = Integer.parseInt(String
-                        .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue()));
+                        .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
             } else {
                 startTime = Long.parseLong(String
-                        .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue()));
+                        .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
             }
         } else {
             throw new ExecutionPlanValidationException("Unique Time Batch window should only have two parameters. " +
@@ -294,7 +312,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
      */
     @Override
     public synchronized StreamEvent find(StateEvent matchingEvent, Finder finder) {
-        return finder.find(matchingEvent, oldEventMap.values(), streamEventCloner);
+        return finder.find(matchingEvent, eventsToBeExpired, streamEventCloner);
     }
 
     /**
@@ -315,7 +333,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
         if (eventsToBeExpired == null) {
             eventsToBeExpired = new ComplexEventChunk<>(false);
         }
-        return OperatorParser.constructOperator(oldEventMap.values(), expression, matchingMetaStateHolder,
+        return OperatorParser.constructOperator(eventsToBeExpired, expression, matchingMetaStateHolder,
                 executionPlanContext, variableExpressionExecutors, eventTableMap);
     }
 
