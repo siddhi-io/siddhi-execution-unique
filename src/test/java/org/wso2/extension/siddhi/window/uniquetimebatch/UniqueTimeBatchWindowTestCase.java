@@ -43,13 +43,12 @@ public class UniqueTimeBatchWindowTestCase {
 
     @Test
     public void timeWindowBatchTest1() throws InterruptedException {
-
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from cseEventStream#window.unique:timeBatch(symbol,1 sec) " +
+                "from cseEventStream#window.unique:timeBatch(symbol,1 sec,"+100000+") " +
                 "select symbol,sum(price) as sumPrice,volume " +
                 "insert all events into outputStream ;";
 

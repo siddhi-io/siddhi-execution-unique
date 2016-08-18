@@ -61,7 +61,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     private ExecutionPlanContext executionPlanContext;
     private boolean isStartTimeEnabled = false;
     private long startTime = 0;
-    private VariableExpressionExecutor[] variableExpressionExecutors;
+    private VariableExpressionExecutor uniqueKey;
 
     /**
      * The setScheduler method of the TimeWindowProcessor, As scheduler is private variable,
@@ -93,10 +93,10 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     protected void init(ExpressionExecutor[] attributeExpressionExecutors,
                         ExecutionPlanContext executionPlanContext) {
         this.executionPlanContext = executionPlanContext;
-        variableExpressionExecutors = new VariableExpressionExecutor[attributeExpressionExecutors.length - 1];
+        //uniqueKey = new VariableExpressionExecutor[attributeExpressionExecutors.length - 1];
         this.eventsToBeExpired = new ComplexEventChunk<>(false);
         if (attributeExpressionExecutors.length == 2) {
-            variableExpressionExecutors[0] = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
             if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
                 if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
                     timeInMilliSeconds = (Integer)
@@ -106,7 +106,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                             ((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue();
                 } else {
                     throw new ExecutionPlanValidationException("UniqueTimeBatch window's parameter time should be either" +
-                            " int or long, but found " + attributeExpressionExecutors[2].getReturnType());
+                            " int or long, but found " + attributeExpressionExecutors[1].getReturnType());
                 }
             } else {
                 throw new ExecutionPlanValidationException("Unique Time Batch window should have constant " +
@@ -114,7 +114,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                         + attributeExpressionExecutors[1].getClass().getCanonicalName());
             }
         } else if (attributeExpressionExecutors.length == 3) {
-            variableExpressionExecutors[0] = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
             if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
                 if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
                     timeInMilliSeconds = (Integer)
@@ -124,7 +124,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                             ((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue();
                 } else {
                     throw new ExecutionPlanValidationException("UniqueTimeBatch window's parameter time should be either" +
-                            " int or long, but found " + attributeExpressionExecutors[2].getReturnType());
+                            " int or long, but found " + attributeExpressionExecutors[1].getReturnType());
                 }
             } else {
                 throw new ExecutionPlanValidationException("Unique Time Batch window should have constant " +
@@ -141,9 +141,9 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                         .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
             }
         } else {
-            throw new ExecutionPlanValidationException("Unique Time Batch window should only have two parameters. " +
-                    "(<string|int|long|bool|double> attribute, <int> batchWindowTime), but found " + attributeExpressionExecutors.length
-                    + " input attributes");
+            throw new ExecutionPlanValidationException("Unique Time Batch window should only have two or Three parameters. " +
+                    "(<string|int|long|bool|double> attribute, <int> batchWindowTime,<int>startTime(optional)), but found "
+                    + attributeExpressionExecutors.length + " input attributes");
         }
     }
 
@@ -331,7 +331,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                                   ExecutionPlanContext executionPlanContext, List<VariableExpressionExecutor> variableExpressionExecutors,
                                   Map<String, EventTable> eventTableMap) {
         if (eventsToBeExpired == null) {
-            eventsToBeExpired = new ComplexEventChunk<>(false);
+            eventsToBeExpired = new ComplexEventChunk<StreamEvent>(false);
         }
         return OperatorParser.constructOperator(eventsToBeExpired, expression, matchingMetaStateHolder,
                 executionPlanContext, variableExpressionExecutors, eventTableMap);
@@ -344,10 +344,6 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
      * @param event the stream event that need to be processed
      */
     private String generateKey(StreamEvent event) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (VariableExpressionExecutor executor : variableExpressionExecutors) {
-            stringBuilder.append(event.getAttribute(executor.getPosition()));
-        }
-        return stringBuilder.toString();
+        return String.valueOf(event.getAttribute(uniqueKey.getPosition()));
     }
 }
