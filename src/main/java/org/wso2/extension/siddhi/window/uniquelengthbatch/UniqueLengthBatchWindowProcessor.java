@@ -54,7 +54,8 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
     private ComplexEventChunk<StreamEvent> eventsToBeExpired = null;
     private ExecutionPlanContext executionPlanContext;
     private StreamEvent resetEvent = null;
-    private VariableExpressionExecutor[] variableExpressionExecutors;
+    // private VariableExpressionExecutor uniqueKey;
+    private VariableExpressionExecutor uniqueKey;
     private ConcurrentHashMap<String, StreamEvent> oldEventMap = new ConcurrentHashMap<>();
 
     /**
@@ -66,10 +67,9 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
     @Override
     protected void init(ExpressionExecutor[] attributeExpressionExecutors, ExecutionPlanContext executionPlanContext) {
         this.executionPlanContext = executionPlanContext;
-        this.variableExpressionExecutors = new VariableExpressionExecutor[attributeExpressionExecutors.length - 1];
         this.eventsToBeExpired = new ComplexEventChunk<>(false);
         if (attributeExpressionExecutors.length == 2) {
-            this.variableExpressionExecutors[0] = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
             this.length = (Integer)
                     (((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue());
         } else {
@@ -94,9 +94,12 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
             long currentTime = executionPlanContext.getTimestampGenerator().currentTime();
             while (streamEventChunk.hasNext()) {
                 StreamEvent streamEvent = streamEventChunk.next();
+                count++;
+                if (streamEvent.getType() != ComplexEvent.Type.CURRENT) {
+                    continue;
+                }
                 StreamEvent clonedStreamEvent = streamEventCloner.copyStreamEvent(streamEvent);
                 currentEventChunk.add(clonedStreamEvent);
-                count++;
                 if (count == length) {
                     if (eventsToBeExpired.getFirst() != null) {
                         while (eventsToBeExpired.hasNext()) {
@@ -251,10 +254,6 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
      * @param event the stream event that need to be processed
      */
     private String generateKey(StreamEvent event) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (VariableExpressionExecutor executor : variableExpressionExecutors) {
-            stringBuilder.append(event.getAttribute(executor.getPosition()));
-        }
-        return stringBuilder.toString();
+        return String.valueOf(event.getAttribute(uniqueKey.getPosition()));
     }
 }
