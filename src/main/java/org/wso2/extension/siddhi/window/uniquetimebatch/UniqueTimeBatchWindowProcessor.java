@@ -55,13 +55,14 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     private long nextEmitTime = -1;
     private ComplexEventChunk<StreamEvent> currentEventChunk = new ComplexEventChunk<>(false);
     private ComplexEventChunk<StreamEvent> eventsToBeExpired = null;
-    private ConcurrentHashMap<String, StreamEvent> oldEventMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, StreamEvent> uniqueEventMap = new ConcurrentHashMap<>();
     private StreamEvent resetEvent = null;
     private Scheduler scheduler;
     private ExecutionPlanContext executionPlanContext;
     private boolean isStartTimeEnabled = false;
     private long startTime = 0;
     private VariableExpressionExecutor uniqueKey;
+    private boolean isFirstUniqueEnabled = false;
 
     /**
      * The setScheduler method of the TimeWindowProcessor, As scheduler is private variable,
@@ -93,7 +94,6 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     protected void init(ExpressionExecutor[] attributeExpressionExecutors,
                         ExecutionPlanContext executionPlanContext) {
         this.executionPlanContext = executionPlanContext;
-        //uniqueKey = new VariableExpressionExecutor[attributeExpressionExecutors.length - 1];
         this.eventsToBeExpired = new ComplexEventChunk<>(false);
         if (attributeExpressionExecutors.length == 2) {
             uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
@@ -133,6 +133,37 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
             }
             // isStartTimeEnabled used to set start time
             isStartTimeEnabled = true;
+            if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.STRING) {
+                this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
+                        attributeExpressionExecutors[2]).getValue());
+
+            } else if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.INT) {
+                startTime = Integer.parseInt(String
+                        .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
+            } else {
+                startTime = Long.parseLong(String
+                        .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
+            }
+        } else if (attributeExpressionExecutors.length == 4) {
+            uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
+                if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
+                    timeInMilliSeconds = (Integer)
+                            ((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue();
+                } else if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.LONG) {
+                    timeInMilliSeconds = (Long)
+                            ((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue();
+                } else {
+                    throw new ExecutionPlanValidationException("UniqueTimeBatch window's parameter time should be either" +
+                            " int or long, but found " + attributeExpressionExecutors[1].getReturnType());
+                }
+            } else {
+                throw new ExecutionPlanValidationException("Unique Time Batch window should have constant " +
+                        "for time parameter but found a dynamic attribute "
+                        + attributeExpressionExecutors[1].getClass().getCanonicalName());
+            }
+            // isStartTimeEnabled used to set start time
+            isStartTimeEnabled = true;
             if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.INT) {
                 startTime = Integer.parseInt(String
                         .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
@@ -140,6 +171,8 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                 startTime = Long.parseLong(String
                         .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
             }
+            this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
+                    attributeExpressionExecutors[3]).getValue());
         } else {
             throw new ExecutionPlanValidationException("Unique Time Batch window should only have two or Three parameters. " +
                     "(<string|int|long|bool|double> attribute, <int> batchWindowTime,<int>startTime(optional)), but found "
@@ -183,11 +216,19 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                     continue;
                 }
                 StreamEvent clonedStreamEvent = streamEventCloner.copyStreamEvent(streamEvent);
-                currentEventChunk.add(clonedStreamEvent);
+                if (!isFirstUniqueEnabled) {
+                    uniqueEventMap.put(generateKey(clonedStreamEvent), clonedStreamEvent);
+                } else {
+                    uniqueEventMap.putIfAbsent(generateKey(clonedStreamEvent), clonedStreamEvent);
+                }
             }
-            StreamEvent oldEvent;
             streamEventChunk.clear();
             if (sendEvents) {
+                for (StreamEvent event : uniqueEventMap.values()) {
+                    event.setTimestamp(currentTime);
+                    currentEventChunk.add(event);
+                }
+                uniqueEventMap.clear();
                 if (eventsToBeExpired.getFirst() != null) {
                     while (eventsToBeExpired.hasNext()) {
                         StreamEvent expiredEvent = eventsToBeExpired.next();
@@ -204,29 +245,18 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                     resetEvent = null;
                     if (eventsToBeExpired != null) {
                         currentEventChunk.reset();
-                        oldEventMap.clear();
                         while (currentEventChunk.hasNext()) {
                             StreamEvent streamEvent = currentEventChunk.next();
                             StreamEvent eventClonedForMap = streamEventCloner.copyStreamEvent(streamEvent);
                             eventClonedForMap.setType(StreamEvent.Type.EXPIRED);
-                            oldEvent = oldEventMap.put(generateKey(eventClonedForMap), eventClonedForMap);
                             this.eventsToBeExpired.add(eventClonedForMap);
-                            eventsToBeExpired.reset();
-                            while (eventsToBeExpired.hasNext()) {
-                                StreamEvent expiredEvent = eventsToBeExpired.next();
-                                if (oldEvent != null) {
-                                    if (expiredEvent.equals(oldEvent)) {
-                                        this.eventsToBeExpired.remove();
-                                        currentEventChunk.insertBeforeCurrent(oldEvent);
-                                        oldEvent = null;
-                                    }
-                                }
-                            }
                         }
                     }
-                    resetEvent = streamEventCloner.copyStreamEvent(currentEventChunk.getFirst());
-                    resetEvent.setType(ComplexEvent.Type.RESET);
-                    streamEventChunk.add(currentEventChunk.getFirst());
+                    if (currentEventChunk.getFirst() != null) {
+                        resetEvent = streamEventCloner.copyStreamEvent(currentEventChunk.getFirst());
+                        resetEvent.setType(ComplexEvent.Type.RESET);
+                        streamEventChunk.add(currentEventChunk.getFirst());
+                    }
                 }
                 currentEventChunk.clear();
             }
@@ -244,6 +274,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
      * @param currentTime the current time.
      * @return next emit time
      */
+
     private long getNextEmitTime(long currentTime) {
         long elapsedTimeSinceLastEmit = (currentTime - startTime) % timeInMilliSeconds;
         return currentTime + (timeInMilliSeconds - elapsedTimeSinceLastEmit);
@@ -338,8 +369,8 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     }
 
     /**
-     * Used to generate key in oldEventMap to get the old event for current event.
-     * It will oldEventMap key which we give as unique attribute with the event.
+     * Used to generate key in uniqueEventMap to get the old event for current event.
+     * It will uniqueEventMap key which we give as unique attribute with the event.
      *
      * @param event the stream event that need to be processed
      */
