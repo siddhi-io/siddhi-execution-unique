@@ -54,9 +54,9 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
     private ComplexEventChunk<StreamEvent> eventsToBeExpired = null;
     private ExecutionPlanContext executionPlanContext;
     private StreamEvent resetEvent = null;
-    // private VariableExpressionExecutor uniqueKey;
     private VariableExpressionExecutor uniqueKey;
-    private ConcurrentHashMap<String, StreamEvent> oldEventMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, StreamEvent> uniqueEventMap = new ConcurrentHashMap<>();
+    private boolean isFirstUniqueEnabled = false;
 
     /**
      * The init method of the WindowProcessor, this method will be called before other methods.
@@ -72,6 +72,12 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
             this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
             this.length = (Integer)
                     (((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue());
+        } else if (attributeExpressionExecutors.length == 3) {
+            this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            this.length = (Integer) (((ConstantExpressionExecutor) attributeExpressionExecutors[1])
+                    .getValue());
+            this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
+                    attributeExpressionExecutors[2]).getValue());
         } else {
             throw new ExecutionPlanValidationException("Unique Length batch window should only have Two parameter (<int> windowLength), " +
                     "but found " + attributeExpressionExecutors.length + " input attributes");
@@ -94,13 +100,21 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
             long currentTime = executionPlanContext.getTimestampGenerator().currentTime();
             while (streamEventChunk.hasNext()) {
                 StreamEvent streamEvent = streamEventChunk.next();
-                count++;
                 if (streamEvent.getType() != ComplexEvent.Type.CURRENT) {
                     continue;
                 }
                 StreamEvent clonedStreamEvent = streamEventCloner.copyStreamEvent(streamEvent);
-                currentEventChunk.add(clonedStreamEvent);
-                if (count == length) {
+                if (!isFirstUniqueEnabled) {
+                    uniqueEventMap.put(generateKey(clonedStreamEvent), clonedStreamEvent);
+                } else {
+                    uniqueEventMap.putIfAbsent(generateKey(clonedStreamEvent), clonedStreamEvent);
+                }
+                if (uniqueEventMap.size() == length) {
+                    for (StreamEvent event : uniqueEventMap.values()) {
+                        event.setTimestamp(currentTime);
+                        currentEventChunk.add(event);
+                    }
+                    uniqueEventMap.clear();
                     if (eventsToBeExpired.getFirst() != null) {
                         while (eventsToBeExpired.hasNext()) {
                             StreamEvent expiredEvent = eventsToBeExpired.next();
@@ -117,26 +131,11 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
                         resetEvent = null;
                         if (eventsToBeExpired != null) {
                             currentEventChunk.reset();
-                            oldEventMap.clear();
                             while (currentEventChunk.hasNext()) {
                                 StreamEvent toExpireEvent = currentEventChunk.next();
-                                StreamEvent eventClonedForMap = streamEventCloner
-                                        .copyStreamEvent(toExpireEvent);
+                                StreamEvent eventClonedForMap = streamEventCloner.copyStreamEvent(toExpireEvent);
                                 eventClonedForMap.setType(StreamEvent.Type.EXPIRED);
-                                StreamEvent oldEvent = oldEventMap.put(generateKey(eventClonedForMap),
-                                        eventClonedForMap);
                                 eventsToBeExpired.add(eventClonedForMap);
-                                eventsToBeExpired.reset();
-                                while (eventsToBeExpired.hasNext()) {
-                                    StreamEvent expiredEvent = eventsToBeExpired.next();
-                                    if (oldEvent != null) {
-                                        if (expiredEvent.equals(oldEvent)) {
-                                            eventsToBeExpired.remove();
-                                            currentEventChunk.insertBeforeCurrent(oldEvent);
-                                            oldEvent = null;
-                                        }
-                                    }
-                                }
                             }
                         }
                         resetEvent = streamEventCloner.copyStreamEvent(currentEventChunk.getFirst());
@@ -222,7 +221,7 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
      */
     @Override
     public synchronized StreamEvent find(StateEvent matchingEvent, Finder finder) {
-        return finder.find(matchingEvent, oldEventMap.values(), streamEventCloner);
+        return finder.find(matchingEvent, uniqueEventMap.values(), streamEventCloner);
     }
 
     /**
@@ -233,7 +232,7 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
      * @param matchingMetaStateHolder     the meta structure of the incoming matchingEvent
      * @param executionPlanContext        current execution plan context
      * @param variableExpressionExecutors the list of variable ExpressionExecutors already created
-     * @param eventTableMap               oldEventMap of event tables
+     * @param eventTableMap               uniqueEventMap of event tables
      * @return finder having the capability of finding events at the processor against the expression
      * and incoming matchingEvent
      */
@@ -243,13 +242,13 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
         if (eventsToBeExpired == null) {
             eventsToBeExpired = new ComplexEventChunk<StreamEvent>(false);
         }
-        return OperatorParser.constructOperator(oldEventMap.values(), expression,
+        return OperatorParser.constructOperator(uniqueEventMap.values(), expression,
                 matchingMetaStateHolder, executionPlanContext, variableExpressionExecutors, eventTableMap);
     }
 
     /**
-     * Used to generate key in oldEventMap to get the old event for current event.
-     * It will oldEventMap key which we give as unique attribute with the event.
+     * Used to generate key in uniqueEventMap to get the old event for current event.
+     * It will uniqueEventMap key which we give as unique attribute with the event.
      *
      * @param event the stream event that need to be processed
      */
