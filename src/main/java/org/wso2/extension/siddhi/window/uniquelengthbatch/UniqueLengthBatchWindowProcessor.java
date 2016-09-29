@@ -33,29 +33,39 @@ import org.wso2.siddhi.core.table.EventTable;
 import org.wso2.siddhi.core.util.collection.operator.Finder;
 import org.wso2.siddhi.core.util.collection.operator.MatchingMetaStateHolder;
 import org.wso2.siddhi.core.util.parser.OperatorParser;
+import org.wso2.siddhi.query.api.definition.Attribute;
 import org.wso2.siddhi.query.api.exception.ExecutionPlanValidationException;
 import org.wso2.siddhi.query.api.expression.Expression;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-/**
+/*
  * UniqueLengthBatch Window
+ * Sample Query:
+ * from inputStream#window.unique:lengthBatch(attribute1,3,true)
+ * select attribute1, attribute2
+ * insert into outputStream;
+ *
+ * Description:
+ * In the example query given, 3 is the length of the window and attribute1 is the unique attribute.
+ * According to the given attribute it will give length number of unique events .
+ * attribute true is to keep first unique default value is last unique.
  *
  * @since 1.0.0
  */
 public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements FindableProcessor {
 
-    private int length;
+    private int windowLength;
     private int count = 0;
     private ComplexEventChunk<StreamEvent> currentEventChunk = new ComplexEventChunk<StreamEvent>(false);
     private ComplexEventChunk<StreamEvent> eventsToBeExpired = null;
     private ExecutionPlanContext executionPlanContext;
     private StreamEvent resetEvent = null;
     private VariableExpressionExecutor uniqueKey;
-    private ConcurrentHashMap<String, StreamEvent> uniqueEventMap = new ConcurrentHashMap<>();
+    private Map<Object, StreamEvent> uniqueEventMap = new HashMap<>();
     private boolean isFirstUniqueEnabled = false;
 
     /**
@@ -70,16 +80,42 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
         this.eventsToBeExpired = new ComplexEventChunk<>(false);
         if (attributeExpressionExecutors.length == 2) {
             this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
-            this.length = (Integer)
-                    (((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue());
+            if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
+                if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
+                    this.windowLength = (Integer)
+                            (((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue());
+                } else {
+                    throw new ExecutionPlanValidationException("Length should be an INT");
+                }
+            } else {
+                throw new ExecutionPlanValidationException("Unique Length Batch window should have constant " +
+                        "for length parameter but found a dynamic attribute "
+                        + attributeExpressionExecutors[1].getClass().getCanonicalName());
+            }
         } else if (attributeExpressionExecutors.length == 3) {
             this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
-            this.length = (Integer) (((ConstantExpressionExecutor) attributeExpressionExecutors[1])
-                    .getValue());
-            this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
-                    attributeExpressionExecutors[2]).getValue());
+            if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
+                if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
+                    this.windowLength = (Integer)
+                            (((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue());
+                } else {
+                    throw new ExecutionPlanValidationException("Length should be an INT");
+                }
+            } else {
+                throw new ExecutionPlanValidationException("Unique Length Batch window should have constant " +
+                        "for length parameter but found a dynamic attribute "
+                        + attributeExpressionExecutors[1].getClass().getCanonicalName());
+            }
+            if (attributeExpressionExecutors[2] instanceof ConstantExpressionExecutor) {
+                if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.BOOL) {
+                    this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
+                            attributeExpressionExecutors[2]).getValue());
+                } else {
+                    throw new ExecutionPlanValidationException("Third Value should be boolean value");
+                }
+            }
         } else {
-            throw new ExecutionPlanValidationException("Unique Length batch window should only have Two parameter (<int> windowLength), " +
+            throw new ExecutionPlanValidationException("Unique Length batch window should only have Two/Three parameter, " +
                     "but found " + attributeExpressionExecutors.length + " input attributes");
         }
     }
@@ -105,11 +141,16 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
                 }
                 StreamEvent clonedStreamEvent = streamEventCloner.copyStreamEvent(streamEvent);
                 if (!isFirstUniqueEnabled) {
-                    uniqueEventMap.put(generateKey(clonedStreamEvent), clonedStreamEvent);
+                    uniqueEventMap.put(clonedStreamEvent
+                            .getAttribute(uniqueKey.getPosition()), clonedStreamEvent);
                 } else {
-                    uniqueEventMap.putIfAbsent(generateKey(clonedStreamEvent), clonedStreamEvent);
+                    if (!uniqueEventMap.containsKey(clonedStreamEvent
+                            .getAttribute(uniqueKey.getPosition()))) {
+                        uniqueEventMap.put(clonedStreamEvent
+                                .getAttribute(uniqueKey.getPosition()), clonedStreamEvent);
+                    }
                 }
-                if (uniqueEventMap.size() == length) {
+                if (uniqueEventMap.size() == windowLength) {
                     for (StreamEvent event : uniqueEventMap.values()) {
                         event.setTimestamp(currentTime);
                         currentEventChunk.add(event);
@@ -122,28 +163,22 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
                         }
                         outputStreamEventChunk.add(eventsToBeExpired.getFirst());
                     }
-                    if (eventsToBeExpired != null) {
-                        eventsToBeExpired.clear();
-                    }
+                    eventsToBeExpired.clear();
                     if (currentEventChunk.getFirst() != null) {
                         // add reset event in front of current events
                         outputStreamEventChunk.add(resetEvent);
-                        resetEvent = null;
-                        if (eventsToBeExpired != null) {
-                            currentEventChunk.reset();
-                            while (currentEventChunk.hasNext()) {
-                                StreamEvent toExpireEvent = currentEventChunk.next();
-                                StreamEvent eventClonedForMap = streamEventCloner.copyStreamEvent(toExpireEvent);
-                                eventClonedForMap.setType(StreamEvent.Type.EXPIRED);
-                                eventsToBeExpired.add(eventClonedForMap);
-                            }
+                        currentEventChunk.reset();
+                        while (currentEventChunk.hasNext()) {
+                            StreamEvent toExpireEvent = currentEventChunk.next();
+                            StreamEvent eventClonedForMap = streamEventCloner.copyStreamEvent(toExpireEvent);
+                            eventClonedForMap.setType(StreamEvent.Type.EXPIRED);
+                            eventsToBeExpired.add(eventClonedForMap);
                         }
                         resetEvent = streamEventCloner.copyStreamEvent(currentEventChunk.getFirst());
                         resetEvent.setType(ComplexEvent.Type.RESET);
                         outputStreamEventChunk.add(currentEventChunk.getFirst());
                     }
                     currentEventChunk.clear();
-                    count = 0;
                     if (outputStreamEventChunk.getFirst() != null) {
                         streamEventChunks.add(outputStreamEventChunk);
                     }
@@ -244,15 +279,5 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
         }
         return OperatorParser.constructOperator(uniqueEventMap.values(), expression,
                 matchingMetaStateHolder, executionPlanContext, variableExpressionExecutors, eventTableMap);
-    }
-
-    /**
-     * Used to generate key in uniqueEventMap to get the old event for current event.
-     * It will uniqueEventMap key which we give as unique attribute with the event.
-     *
-     * @param event the stream event that need to be processed
-     */
-    private String generateKey(StreamEvent event) {
-        return String.valueOf(event.getAttribute(uniqueKey.getPosition()));
     }
 }

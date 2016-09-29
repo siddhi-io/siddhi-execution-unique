@@ -134,12 +134,13 @@ public class UniqueLengthBatchWindowTestCase {
     public void lengthWindowBatchTestFirstUnique() throws InterruptedException {
 
         final int length = 4;
+        final boolean isFirstUniqueEnabled = true;
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from cseEventStream#window.unique:lengthBatch(symbol," + length + ",true) " +
+                "from cseEventStream#window.unique:lengthBatch(symbol," + length + "," + isFirstUniqueEnabled + ") " +
                 "select symbol,price, volume " +
                 "insert all events into outputStream ;";
 
