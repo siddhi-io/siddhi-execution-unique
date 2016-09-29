@@ -39,12 +39,21 @@ import org.wso2.siddhi.query.api.definition.Attribute;
 import org.wso2.siddhi.query.api.exception.ExecutionPlanValidationException;
 import org.wso2.siddhi.query.api.expression.Expression;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-/**
+/*
  * UniqueTimeBatch window
+ * Sample Query:
+ * from inputStream#window.unique:timeBatch(attribute,3 sec)
+ * select attribute1, attribute2
+ * insert into outputStream;
+ *
+ * Description:
+ * In the example query given, 3 is the duration of the window and attribute is the unique attribute.
+ * According to the given attribute it will give unique events within each given time batch.
+ * attribute true is to keep first unique default value is last unique.
  *
  * @since 1.0.0
  */
@@ -55,7 +64,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     private long nextEmitTime = -1;
     private ComplexEventChunk<StreamEvent> currentEventChunk = new ComplexEventChunk<>(false);
     private ComplexEventChunk<StreamEvent> eventsToBeExpired = null;
-    private ConcurrentHashMap<String, StreamEvent> uniqueEventMap = new ConcurrentHashMap<>();
+    private Map<Object, StreamEvent> uniqueEventMap = new HashMap<>();
     private StreamEvent resetEvent = null;
     private Scheduler scheduler;
     private ExecutionPlanContext executionPlanContext;
@@ -132,15 +141,16 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                         + attributeExpressionExecutors[1].getClass().getCanonicalName());
             }
             // isStartTimeEnabled used to set start time
-            isStartTimeEnabled = true;
-            if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.STRING) {
+            if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.BOOL) {
                 this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
                         attributeExpressionExecutors[2]).getValue());
 
             } else if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.INT) {
+                isStartTimeEnabled = true;
                 startTime = Integer.parseInt(String
                         .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
             } else {
+                isStartTimeEnabled = true;
                 startTime = Long.parseLong(String
                         .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
             }
@@ -174,9 +184,8 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
             this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
                     attributeExpressionExecutors[3]).getValue());
         } else {
-            throw new ExecutionPlanValidationException("Unique Time Batch window should only have two or Three parameters. " +
-                    "(<string|int|long|bool|double> attribute, <int> batchWindowTime,<int>startTime(optional)), but found "
-                    + attributeExpressionExecutors.length + " input attributes");
+            throw new ExecutionPlanValidationException("Unique Time Batch window should only have two or Three or four parameters. " +
+                    "but found " + attributeExpressionExecutors.length + " input attributes");
         }
     }
 
@@ -217,9 +226,14 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                 }
                 StreamEvent clonedStreamEvent = streamEventCloner.copyStreamEvent(streamEvent);
                 if (!isFirstUniqueEnabled) {
-                    uniqueEventMap.put(generateKey(clonedStreamEvent), clonedStreamEvent);
+                    uniqueEventMap.put(clonedStreamEvent
+                            .getAttribute(uniqueKey.getPosition()), clonedStreamEvent);
                 } else {
-                    uniqueEventMap.putIfAbsent(generateKey(clonedStreamEvent), clonedStreamEvent);
+                    if (!uniqueEventMap.containsKey(clonedStreamEvent
+                            .getAttribute(uniqueKey.getPosition()))) {
+                        uniqueEventMap.put(clonedStreamEvent
+                                .getAttribute(uniqueKey.getPosition()), clonedStreamEvent);
+                    }
                 }
             }
             streamEventChunk.clear();
@@ -236,21 +250,16 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                     }
                     streamEventChunk.add(eventsToBeExpired.getFirst());
                 }
-                if (eventsToBeExpired != null) {
-                    eventsToBeExpired.clear();
-                }
+                eventsToBeExpired.clear();
                 if (currentEventChunk.getFirst() != null) {
                     // add reset event in front of current events
                     streamEventChunk.add(resetEvent);
-                    resetEvent = null;
-                    if (eventsToBeExpired != null) {
-                        currentEventChunk.reset();
-                        while (currentEventChunk.hasNext()) {
-                            StreamEvent streamEvent = currentEventChunk.next();
-                            StreamEvent eventClonedForMap = streamEventCloner.copyStreamEvent(streamEvent);
-                            eventClonedForMap.setType(StreamEvent.Type.EXPIRED);
-                            this.eventsToBeExpired.add(eventClonedForMap);
-                        }
+                    currentEventChunk.reset();
+                    while (currentEventChunk.hasNext()) {
+                        StreamEvent streamEvent = currentEventChunk.next();
+                        StreamEvent eventClonedForMap = streamEventCloner.copyStreamEvent(streamEvent);
+                        eventClonedForMap.setType(StreamEvent.Type.EXPIRED);
+                        this.eventsToBeExpired.add(eventClonedForMap);
                     }
                     if (currentEventChunk.getFirst() != null) {
                         resetEvent = streamEventCloner.copyStreamEvent(currentEventChunk.getFirst());
@@ -366,15 +375,5 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
         }
         return OperatorParser.constructOperator(eventsToBeExpired, expression, matchingMetaStateHolder,
                 executionPlanContext, variableExpressionExecutors, eventTableMap);
-    }
-
-    /**
-     * Used to generate key in uniqueEventMap to get the old event for current event.
-     * It will uniqueEventMap key which we give as unique attribute with the event.
-     *
-     * @param event the stream event that need to be processed
-     */
-    private String generateKey(StreamEvent event) {
-        return String.valueOf(event.getAttribute(uniqueKey.getPosition()));
     }
 }
