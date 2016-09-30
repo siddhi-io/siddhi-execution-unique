@@ -105,7 +105,13 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
         this.executionPlanContext = executionPlanContext;
         this.eventsToBeExpired = new ComplexEventChunk<>(false);
         if (attributeExpressionExecutors.length == 2) {
-            uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            if (attributeExpressionExecutors[0] instanceof VariableExpressionExecutor) {
+                this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            } else {
+                throw new ExecutionPlanValidationException("Unique Time Batch window should have Variable " +
+                        "for uniqueKey parameter but found a attribute "
+                        + attributeExpressionExecutors[0].getClass().getCanonicalName());
+            }
             if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
                 if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
                     timeInMilliSeconds = (Integer)
@@ -114,7 +120,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                     timeInMilliSeconds = (Long)
                             ((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue();
                 } else {
-                    throw new ExecutionPlanValidationException("UniqueTimeBatch window's parameter time should be either" +
+                    throw new ExecutionPlanValidationException("Unique Time Batch window's parameter time should be either" +
                             " int or long, but found " + attributeExpressionExecutors[1].getReturnType());
                 }
             } else {
@@ -123,7 +129,13 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                         + attributeExpressionExecutors[1].getClass().getCanonicalName());
             }
         } else if (attributeExpressionExecutors.length == 3) {
-            uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            if (attributeExpressionExecutors[0] instanceof VariableExpressionExecutor) {
+                this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            } else {
+                throw new ExecutionPlanValidationException("Unique Time Batch window should have Variable " +
+                        "for uniqueKey parameter but found a attribute "
+                        + attributeExpressionExecutors[0].getClass().getCanonicalName());
+            }
             if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
                 if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
                     timeInMilliSeconds = (Integer)
@@ -141,21 +153,32 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                         + attributeExpressionExecutors[1].getClass().getCanonicalName());
             }
             // isStartTimeEnabled used to set start time
-            if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.BOOL) {
-                this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
-                        attributeExpressionExecutors[2]).getValue());
+            if (attributeExpressionExecutors[2] instanceof ConstantExpressionExecutor) {
+                if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.BOOL) {
+                    this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
+                            attributeExpressionExecutors[2]).getValue());
 
-            } else if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.INT) {
-                isStartTimeEnabled = true;
-                startTime = Integer.parseInt(String
-                        .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
+                } else if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.INT) {
+                    isStartTimeEnabled = true;
+                    startTime = Integer.parseInt(String
+                            .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
+                } else {
+                    isStartTimeEnabled = true;
+                    startTime = Long.parseLong(String
+                            .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
+                }
             } else {
-                isStartTimeEnabled = true;
-                startTime = Long.parseLong(String
-                        .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
+                throw new ExecutionPlanValidationException("Unique Time Batch window's parameter startTime or isStartTimeEnabled should be either" +
+                        " int or long or bool for isStartTimeEnabled but found " + attributeExpressionExecutors[2].getReturnType());
             }
         } else if (attributeExpressionExecutors.length == 4) {
-            uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            if (attributeExpressionExecutors[0] instanceof VariableExpressionExecutor) {
+                this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            } else {
+                throw new ExecutionPlanValidationException("Unique Time Batch window should have Variable " +
+                        "for uniqueKey parameter but found a attribute "
+                        + attributeExpressionExecutors[0].getClass().getCanonicalName());
+            }
             if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
                 if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
                     timeInMilliSeconds = (Integer)
@@ -174,15 +197,25 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
             }
             // isStartTimeEnabled used to set start time
             isStartTimeEnabled = true;
-            if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.INT) {
-                startTime = Integer.parseInt(String
-                        .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
+            if (attributeExpressionExecutors[2] instanceof ConstantExpressionExecutor) {
+                if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.INT) {
+                    startTime = Integer.parseInt(String
+                            .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
+                } else {
+                    startTime = Long.parseLong(String
+                            .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
+                }
             } else {
-                startTime = Long.parseLong(String
-                        .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
+                throw new ExecutionPlanValidationException("Unique Time Batch window's parameter startTime should be either" +
+                        " int or long, but found " + attributeExpressionExecutors[2].getReturnType());
             }
-            this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
-                    attributeExpressionExecutors[3]).getValue());
+            if (attributeExpressionExecutors[3] instanceof ConstantExpressionExecutor) {
+                this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
+                        attributeExpressionExecutors[3]).getValue());
+            } else {
+                throw new ExecutionPlanValidationException("Unique Time Batch window's parameter isFirstUniqueEnabled should be" +
+                        " bool, but found " + attributeExpressionExecutors[3].getReturnType());
+            }
         } else {
             throw new ExecutionPlanValidationException("Unique Time Batch window should only have two or Three or four parameters. " +
                     "but found " + attributeExpressionExecutors.length + " input attributes");
