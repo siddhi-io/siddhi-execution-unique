@@ -108,9 +108,9 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
             if (attributeExpressionExecutors[0] instanceof VariableExpressionExecutor) {
                 this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
             } else {
-                throw new ExecutionPlanValidationException("Unique Time Batch window should have Variable " +
-                        "for uniqueKey parameter but found a attribute "
-                        + attributeExpressionExecutors[0].getClass().getCanonicalName());
+                throw new ExecutionPlanValidationException("Unique Length Batch window should have variable " +
+                        "for Unique Key parameter but found an attribute " +
+                        attributeExpressionExecutors[0].getClass().getCanonicalName());
             }
             if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
                 if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
@@ -132,9 +132,9 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
             if (attributeExpressionExecutors[0] instanceof VariableExpressionExecutor) {
                 this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
             } else {
-                throw new ExecutionPlanValidationException("Unique Time Batch window should have Variable " +
-                        "for uniqueKey parameter but found a attribute "
-                        + attributeExpressionExecutors[0].getClass().getCanonicalName());
+                throw new ExecutionPlanValidationException("Unique Length Batch window should have variable " +
+                        "for Unique Key parameter but found an attribute " +
+                        attributeExpressionExecutors[0].getClass().getCanonicalName());
             }
             if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
                 if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
@@ -162,22 +162,26 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                     isStartTimeEnabled = true;
                     startTime = Integer.parseInt(String
                             .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
-                } else {
+                } else if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.LONG) {
                     isStartTimeEnabled = true;
                     startTime = Long.parseLong(String
                             .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
+                } else {
+                    throw new ExecutionPlanValidationException("Expected either boolean, int or long type for UniqueTimeBatch window's third parameter, but found "
+                            + attributeExpressionExecutors[2].getReturnType());
                 }
             } else {
-                throw new ExecutionPlanValidationException("Unique Time Batch window's parameter startTime or isStartTimeEnabled should be either" +
-                        " int or long or bool for isStartTimeEnabled but found " + attributeExpressionExecutors[2].getReturnType());
+                throw new ExecutionPlanValidationException("Unique Time Batch window should have constant " +
+                        "for time parameter but found a dynamic attribute "
+                        + attributeExpressionExecutors[2].getReturnType());
             }
         } else if (attributeExpressionExecutors.length == 4) {
             if (attributeExpressionExecutors[0] instanceof VariableExpressionExecutor) {
                 this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
             } else {
-                throw new ExecutionPlanValidationException("Unique Time Batch window should have Variable " +
-                        "for uniqueKey parameter but found a attribute "
-                        + attributeExpressionExecutors[0].getClass().getCanonicalName());
+                throw new ExecutionPlanValidationException("Unique Length Batch window should have variable " +
+                        "for Unique Key parameter but found an attribute " +
+                        attributeExpressionExecutors[0].getClass().getCanonicalName());
             }
             if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
                 if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
