@@ -50,9 +50,16 @@ import java.util.Map;
  * insert into outputStream;
  *
  * Description:
- * In the example query given, 3 is the length of the window and attribute1 is the unique attribute.
- * According to the given attribute it will give length number of unique events .
- * attribute true is to keep first unique default value is last unique.
+ * The behavior of this window is similar to that of length-batch-window in Siddhi,
+ * except that this window keeps only "unique" events in the window. The window will drop any duplicate events.
+ * We call two events are "not unique" if a certain attribute (e.g. attribute1 in the sample query given) bares equal values in both the events.
+ *
+ * In the given example query, 3 is the length of the window.
+ * attribute1 is the attribute which is checked for uniqueness.
+ * Third boolean parameter (which is optional - defaults to false, if not provided), being set to 'true', indicates that this is a "first-unique" window.
+ * When a duplicate event arrives, "first-unique" window keeps the first event that came in and drops the event which came later.
+ * If the third parameter is set to 'false', then the window is a "last-unique" window; meaning, when a duplicate event arrives,
+ * the last-unique window keeps the event which came later and drops the event which came before.
  *
  * @since 1.0.0
  */
@@ -82,8 +89,8 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
             if (attributeExpressionExecutors[0] instanceof VariableExpressionExecutor) {
                 this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
             } else {
-                throw new ExecutionPlanValidationException("Unique Length Batch window should have Variable " +
-                        "for uniqueKey parameter but found a attribute "
+                throw new ExecutionPlanValidationException("Unique Length Batch window should have variable " +
+                        "for Unique Key parameter but found an attribute "
                         + attributeExpressionExecutors[0].getClass().getCanonicalName());
             }
             if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
@@ -91,20 +98,20 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
                     this.windowLength = (Integer)
                             (((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue());
                 } else {
-                    throw new ExecutionPlanValidationException("Unique Length Batch window's 'length' parameter should be INT, but found "
+                    throw new ExecutionPlanValidationException("Unique Length Batch window's Length parameter should be INT, but found "
                             + attributeExpressionExecutors[1].getReturnType());
                 }
             } else {
                 throw new ExecutionPlanValidationException("Unique Length Batch window should have constant " +
-                        "for length parameter but found a dynamic attribute "
+                        "for Length parameter but found a dynamic attribute "
                         + attributeExpressionExecutors[1].getClass().getCanonicalName());
             }
         } else if (attributeExpressionExecutors.length == 3) {
             if (attributeExpressionExecutors[0] instanceof VariableExpressionExecutor) {
                 this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
             } else {
-                throw new ExecutionPlanValidationException("Unique Length Batch window should have Variable " +
-                        "for uniqueKey parameter but found a attribute "
+                throw new ExecutionPlanValidationException("Unique Length Batch window should have variable " +
+                        "for Unique Key parameter but found an attribute "
                         + attributeExpressionExecutors[0].getClass().getCanonicalName());
             }
             if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
@@ -112,12 +119,12 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
                     this.windowLength = (Integer)
                             (((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue());
                 } else {
-                    throw new ExecutionPlanValidationException("Unique Length Batch window's 'length' parameter should be INT, but found "
+                    throw new ExecutionPlanValidationException("Unique Length Batch window's Length parameter should be INT, but found "
                             + attributeExpressionExecutors[1].getReturnType());
                 }
             } else {
                 throw new ExecutionPlanValidationException("Unique Length Batch window should have constant " +
-                        "for length parameter but found a dynamic attribute "
+                        "for Length parameter but found a dynamic attribute "
                         + attributeExpressionExecutors[1].getClass().getCanonicalName());
             }
             if (attributeExpressionExecutors[2] instanceof ConstantExpressionExecutor) {
@@ -125,12 +132,12 @@ public class UniqueLengthBatchWindowProcessor extends WindowProcessor implements
                     this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
                             attributeExpressionExecutors[2]).getValue());
                 } else {
-                    throw new ExecutionPlanValidationException("Unique Length Batch window's Third parameter should be boolean value, but found "
+                    throw new ExecutionPlanValidationException("Unique Length Batch window's third parameter should be a boolean, but found "
                             + attributeExpressionExecutors[2].getReturnType());
                 }
             }
         } else {
-            throw new ExecutionPlanValidationException("Unique Length batch window should only have two or three parameter, " +
+            throw new ExecutionPlanValidationException("Unique Length batch window should only have two or three parameters, " +
                     "but found " + attributeExpressionExecutors.length + " input attributes");
         }
     }
