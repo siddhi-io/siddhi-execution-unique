@@ -251,7 +251,7 @@ public class UniqueLengthBatchWindowTestCase {
                 "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "@info(name = 'query1') " +
                 "from cseEventStream#window.unique:lengthBatch(symbol,4) " +
-                "select symbol,sum(price) as sumPrice,volume " +
+                "select symbol,price,volume " +
                 "insert into outputStream ;";
 
         ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
@@ -260,11 +260,7 @@ public class UniqueLengthBatchWindowTestCase {
             public void receive(Event[] events) {
                 EventPrinter.print(events);
                 for (Event event : events) {
-//                    Assert.assertEquals("Events cannot be expired", false, event.isExpired());
                     inEventCount++;
-//                    if (inEventCount == 1) {
-//                        Assert.assertEquals(130.0, event.getData(1));
-//                    }
                 }
                 eventArrived = true;
             }
@@ -280,8 +276,8 @@ public class UniqueLengthBatchWindowTestCase {
         inputHandler.send(new Object[]{"IBM", 60f, 1});
         Thread.sleep(500);
         executionPlanRuntime.shutdown();
-//        Assert.assertEquals(0, inEventCount);
-//        Assert.assertTrue(eventArrived);
+        Assert.assertEquals(0, inEventCount);
+        Assert.assertTrue(!eventArrived);
 
     }
 
