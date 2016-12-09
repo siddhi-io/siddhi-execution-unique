@@ -16,7 +16,7 @@
 # under the License.
 #
 
-length=org.wso2.extension.siddhi.window.uniquelength.UniqueLengthWindowProcessor
-lengthBatch=org.wso2.extension.siddhi.window.uniquelengthbatch.UniqueLengthBatchWindowProcessor
-time=org.wso2.extension.siddhi.window.uniquetime.UniqueTimeWindowProcessor
-timeBatch=org.wso2.extension.siddhi.window.uniquetimebatch.UniqueTimeBatchWindowProcessor
+length=org.wso2.extension.siddhi.execution.unique.UniqueLengthWindowProcessor
+lengthBatch=org.wso2.extension.siddhi.execution.unique.UniqueLengthBatchWindowProcessor
+time=org.wso2.extension.siddhi.execution.unique.UniqueTimeWindowProcessor
+timeBatch=org.wso2.extension.siddhi.execution.unique.UniqueTimeBatchWindowProcessor

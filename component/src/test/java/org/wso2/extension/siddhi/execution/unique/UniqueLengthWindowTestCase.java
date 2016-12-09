@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.extension.siddhi.window.uniquelength;
+package org.wso2.extension.siddhi.execution.unique;
 
 import org.apache.log4j.Logger;
 import org.junit.Assert;

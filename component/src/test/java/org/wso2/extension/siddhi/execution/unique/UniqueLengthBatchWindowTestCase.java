@@ -15,7 +15,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.wso2.extension.siddhi.window.uniquelengthbatch;
+package org.wso2.extension.siddhi.execution.unique;
 
 import junit.framework.Assert;
 import org.apache.log4j.Logger;
