@@ -16,4 +16,5 @@
 # under the License.
 #
 
+length=org.wso2.extension.siddhi.window.uniquelength.UniqueLengthWindowProcessor
 lengthBatch=org.wso2.extension.siddhi.window.uniquelengthbatch.UniqueLengthBatchWindowProcessor
