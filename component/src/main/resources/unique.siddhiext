@@ -19,3 +19,4 @@
 length=org.wso2.extension.siddhi.window.uniquelength.UniqueLengthWindowProcessor
 lengthBatch=org.wso2.extension.siddhi.window.uniquelengthbatch.UniqueLengthBatchWindowProcessor
 time=org.wso2.extension.siddhi.window.uniquetime.UniqueTimeWindowProcessor
+timeBatch=org.wso2.extension.siddhi.window.uniquetimebatch.UniqueTimeBatchWindowProcessor
