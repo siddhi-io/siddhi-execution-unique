@@ -18,9 +18,8 @@
 package org.wso2.extension.siddhi.execution.unique;
 
 import org.wso2.siddhi.core.config.ExecutionPlanContext;
-import org.wso2.siddhi.core.event.ComplexEvent;
 import org.wso2.siddhi.core.event.ComplexEventChunk;
-import org.wso2.siddhi.core.event.MetaComplexEvent;
+import org.wso2.siddhi.core.event.state.StateEvent;
 import org.wso2.siddhi.core.event.stream.StreamEvent;
 import org.wso2.siddhi.core.event.stream.StreamEventCloner;
 import org.wso2.siddhi.core.executor.ConstantExpressionExecutor;
@@ -33,7 +32,8 @@ import org.wso2.siddhi.core.query.processor.stream.window.WindowProcessor;
 import org.wso2.siddhi.core.table.EventTable;
 import org.wso2.siddhi.core.util.Scheduler;
 import org.wso2.siddhi.core.util.collection.operator.Finder;
-import org.wso2.siddhi.core.util.parser.CollectionOperatorParser;
+import org.wso2.siddhi.core.util.collection.operator.MatchingMetaStateHolder;
+import org.wso2.siddhi.core.util.parser.OperatorParser;
 import org.wso2.siddhi.query.api.definition.Attribute;
 import org.wso2.siddhi.query.api.exception.ExecutionPlanValidationException;
 import org.wso2.siddhi.query.api.expression.Expression;
@@ -184,7 +184,7 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
      * @return the matched events
      */
     @Override
-    public synchronized StreamEvent find(ComplexEvent matchingEvent, Finder finder) {
+    public StreamEvent find(StateEvent matchingEvent, Finder finder) {
         return finder.find(matchingEvent, expiredEventChunk, streamEventCloner);
     }
 
@@ -193,21 +193,19 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
      * matchingEvent and the given matching expression logic.
      *
      * @param expression                  the matching expression
-     * @param matchingMetaComplexEvent    the meta structure of the incoming matchingEvent
+     * @param matchingMetaStateHolder     the meta structure of the incoming matchingEvent
      * @param executionPlanContext        current execution plan context
      * @param variableExpressionExecutors the list of variable ExpressionExecutors already created
      * @param eventTableMap               map of event tables
-     * @param matchingStreamIndex         the stream index of the incoming matchingEvent
-     * @param withinTime                  the maximum time gap between the events to be matched
      * @return finder having the capability of finding events at the processor against the expression and incoming
      * matchingEvent
      */
     @Override
-    public Finder constructFinder(Expression expression, MetaComplexEvent matchingMetaComplexEvent,
+    public Finder constructFinder(Expression expression, MatchingMetaStateHolder matchingMetaStateHolder,
                                   ExecutionPlanContext executionPlanContext, List<VariableExpressionExecutor> variableExpressionExecutors,
-                                  Map<String, EventTable> eventTableMap, int matchingStreamIndex, long withinTime) {
-        return CollectionOperatorParser.parse(expression, matchingMetaComplexEvent, executionPlanContext,
-                variableExpressionExecutors, eventTableMap, matchingStreamIndex, inputDefinition, withinTime);
+                                  Map<String, EventTable> eventTableMap) {
+        return OperatorParser.constructOperator(expiredEventChunk, expression,
+                matchingMetaStateHolder, executionPlanContext, variableExpressionExecutors, eventTableMap);
     }
 
     /**
