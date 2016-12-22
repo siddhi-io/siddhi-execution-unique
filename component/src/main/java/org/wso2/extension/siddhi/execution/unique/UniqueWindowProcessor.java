@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.siddhi.core.query.processor.stream.window;
+package org.wso2.extension.siddhi.execution.unique;
 
 
 import org.wso2.siddhi.core.config.ExecutionPlanContext;

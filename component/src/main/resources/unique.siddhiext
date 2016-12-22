@@ -20,3 +20,6 @@ length=org.wso2.extension.siddhi.execution.unique.UniqueLengthWindowProcessor
 lengthBatch=org.wso2.extension.siddhi.execution.unique.UniqueLengthBatchWindowProcessor
 time=org.wso2.extension.siddhi.execution.unique.UniqueTimeWindowProcessor
 timeBatch=org.wso2.extension.siddhi.execution.unique.UniqueTimeBatchWindowProcessor
+unique=org.wso2.extension.siddhi.execution.unique.UniqueWindowProcessor
+firstUnique=org.wso2.extension.siddhi.execution.unique.FirstUniqueWindowProcessor
+uniqueExternalTimeBatch=org.wso2.extension.siddhi.execution.unique.UniqueExternalTimeBatchWindowProcessor
