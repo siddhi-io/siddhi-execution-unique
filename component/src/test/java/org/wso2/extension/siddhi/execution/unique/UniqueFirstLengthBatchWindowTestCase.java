@@ -29,6 +29,7 @@ import org.wso2.siddhi.core.stream.input.InputHandler;
 import org.wso2.siddhi.core.util.EventPrinter;
 
 public class UniqueFirstLengthBatchWindowTestCase {
+    private static final Logger log = Logger.getLogger(UniqueFirstLengthBatchWindowTestCase.class);
     private int inEventCount;
     private int removeEventCount;
     private boolean eventArrived;
@@ -43,7 +44,8 @@ public class UniqueFirstLengthBatchWindowTestCase {
     }
 
     @Test
-    public void LengthBatchWindowTest2() throws InterruptedException {
+    public void uniqueFirstLengthBatchWindowTest2() throws InterruptedException {
+        log.info("UniqueFirstLengthBatchWindow test1");
         final int length = 4;
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +

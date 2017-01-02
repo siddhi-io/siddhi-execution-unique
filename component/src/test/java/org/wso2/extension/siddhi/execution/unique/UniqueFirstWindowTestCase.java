@@ -41,8 +41,8 @@ public class UniqueFirstWindowTestCase {
     }
 
     @Test
-    public void firstUniqueWindowTest1() throws InterruptedException {
-        log.info("firstUniqueWindow test1");
+    public void uniqueFirstWindowTest1() throws InterruptedException {
+        log.info("UniqueFirstWindow test1");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 
@@ -90,7 +90,7 @@ public class UniqueFirstWindowTestCase {
 
     @Test
     public void firstUniqueWindowTest2() throws InterruptedException {
-        log.info("firstUniqueWindow test2");
+        log.info("UniqueFirstWindow test2");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 

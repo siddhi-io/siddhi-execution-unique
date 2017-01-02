@@ -29,6 +29,7 @@ import org.wso2.siddhi.core.stream.input.InputHandler;
 import org.wso2.siddhi.core.util.EventPrinter;
 
 public class UniqueFirstTimeBatchWindowTestCase {
+    private static final Logger log = Logger.getLogger(UniqueFirstTimeBatchWindowTestCase.class);
     private int inEventCount;
     private int removeEventCount;
     private boolean eventArrived;
@@ -41,8 +42,8 @@ public class UniqueFirstTimeBatchWindowTestCase {
     }
 
     @Test
-    public void timeWindowBatchTest1() throws InterruptedException {
-
+    public void uniqueFirstTimeBatchWindowTest1() throws InterruptedException {
+        log.info("UniqueFirstTimeBatchWindow test1");
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";

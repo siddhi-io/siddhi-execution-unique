@@ -45,7 +45,7 @@ public class UniqueTimeWindowTestCase {
      */
     @Test
     public void uniqueTimeWindowTest1() throws InterruptedException {
-
+        log.info("UniqueTimeWindow Test1");
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "@info(name = 'query1') from cseEventStream#window.unique:time(symbol, 2 sec) select symbol,price," +
@@ -74,7 +74,7 @@ public class UniqueTimeWindowTestCase {
 
     @Test
     public void uniqueTimeWindowTest2() throws InterruptedException {
-
+        log.info("UniqueTimeWindow Test2");
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "@info(name = 'query1') from cseEventStream#window.unique:time(symbol, 1 sec) select symbol,price," +
@@ -110,7 +110,7 @@ public class UniqueTimeWindowTestCase {
 
     @Test
     public void uniqueTimeWindowTest3() throws InterruptedException {
-
+        log.info("UniqueTimeWindow Test3");
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "@info(name = 'query1') from cseEventStream#window.unique:time(symbol, 1 sec) select symbol,price," +
@@ -143,9 +143,8 @@ public class UniqueTimeWindowTestCase {
 
     @Test
     public void uniqueTimeWindowTest4() throws InterruptedException {
-
+        log.info("UniqueTimeWindow Test4");
         SiddhiManager siddhiManager = new SiddhiManager();
-
         String cseEventStream = "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "@info(name = 'query1') from cseEventStream#window.unique:time(volume, 1 sec) select symbol,price," +
                 "volume insert expired events into outputStream ;";
@@ -180,7 +179,7 @@ public class UniqueTimeWindowTestCase {
 
     @Test
     public void uniqueTimeWindowTest5() throws InterruptedException {
-
+        log.info("UniqueTimeWindow Test5");
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "@info(name = 'query1') from cseEventStream#window.unique:time(symbol, 1 sec) select symbol,price," +

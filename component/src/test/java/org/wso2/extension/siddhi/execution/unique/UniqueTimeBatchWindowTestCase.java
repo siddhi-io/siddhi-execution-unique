@@ -42,8 +42,8 @@ public class UniqueTimeBatchWindowTestCase {
     }
 
     @Test
-    public void timeWindowBatchTest1() throws InterruptedException {
-
+    public void uniqueTimeWindowBatchTest1() throws InterruptedException {
+        log.info("TimeBatchWindow Test1");
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
@@ -89,8 +89,8 @@ public class UniqueTimeBatchWindowTestCase {
 
 
     @Test
-    public void timeWindowBatchTest3() throws InterruptedException {
-
+    public void uniqueTimeWindowBatchTest2() throws InterruptedException {
+        log.info("UniqueTimeBatchWindow Test2");
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
@@ -135,8 +135,8 @@ public class UniqueTimeBatchWindowTestCase {
     }
 
     @Test
-    public void timeWindowBatchTest4() throws InterruptedException {
-
+    public void uniqueTimeWindowBatchTest3() throws InterruptedException {
+        log.info("UniqueTimeBatchWindow Test3");
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
@@ -181,8 +181,8 @@ public class UniqueTimeBatchWindowTestCase {
     }
 
     @Test
-    public void timeWindowBatchTest5() throws InterruptedException {
-
+    public void uniqueTimeWindowBatchTest4() throws InterruptedException {
+        log.info("UniqueTimeBatchWindow Test4");
         SiddhiManager siddhiManager = new SiddhiManager();
         String streams = "" +
                 "define stream cseEventStream (symbol string, price float, volume int); " +
@@ -227,8 +227,8 @@ public class UniqueTimeBatchWindowTestCase {
     }
 
     @Test
-    public void timeWindowBatchTest6() throws InterruptedException {
-
+    public void uniqueTimeWindowBatchTest5() throws InterruptedException {
+        log.info("UniqueTimeBatchWindow Test5");
         SiddhiManager siddhiManager = new SiddhiManager();
         String streams = "" +
                 "define stream cseEventStream (symbol string, price float, volume int); " +
@@ -273,8 +273,8 @@ public class UniqueTimeBatchWindowTestCase {
     }
 
     @Test
-    public void timeWindowBatchTest7() throws InterruptedException {
-
+    public void uniqueTimeWindowBatchTest6() throws InterruptedException {
+        log.info("UniqueTimeBatchWindow Test6");
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
@@ -309,10 +309,10 @@ public class UniqueTimeBatchWindowTestCase {
         while (System.currentTimeMillis() % 2000 != 0) ;
         inputHandler.send(new Object[]{"IBM", 700f, 0});
         inputHandler.send(new Object[]{"WSO2", 60.5f, 1});
-        Thread.sleep(8000);
+        Thread.sleep(8100);
         inputHandler.send(new Object[]{"WSO2", 60.5f, 1});
         inputHandler.send(new Object[]{"II", 60.5f, 1});
-        Thread.sleep(13000);
+        Thread.sleep(13100);
         inputHandler.send(new Object[]{"TT", 60.5f, 1});
         inputHandler.send(new Object[]{"YY", 60.5f, 1});
         Thread.sleep(5000);

@@ -31,20 +31,18 @@ import org.wso2.siddhi.core.util.EventPrinter;
 
 public class UniqueEverWindowTestCase {
     private static final Logger log = Logger.getLogger(UniqueEverWindowTestCase.class);
-    private int count;
     private long value;
     private boolean eventArrived;
 
     @Before
     public void init() {
-        count = 0;
         value = 0;
         eventArrived = false;
     }
 
     @Test
-    public void uniqueWindowTest1() throws InterruptedException {
-        log.info("uniqueWindow test1");
+    public void uniqueEverWindowTest1() throws InterruptedException {
+        log.info("uniqueEverWindow test1");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 
@@ -88,8 +86,8 @@ public class UniqueEverWindowTestCase {
     }
 
     @Test
-    public void uniqueWindowTest2() throws InterruptedException {
-        log.info("uniqueWindow test2");
+    public void uniqueEverWindowTest2() throws InterruptedException {
+        log.info("uniqueEverWindow test2");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 

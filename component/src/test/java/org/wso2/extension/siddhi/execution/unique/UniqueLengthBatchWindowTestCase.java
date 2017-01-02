@@ -45,40 +45,7 @@ public class UniqueLengthBatchWindowTestCase {
     }
 
     @Test
-    public void LengthBatchWindowTest1() throws InterruptedException {
-        SiddhiManager siddhiManager = new SiddhiManager();
-        String cseEventStream = "" +
-                "define stream cseEventStream (symbol string, price float, volume int);";
-        String query = "" +
-                "@info(name = 'query1') " +
-                "from cseEventStream#window.unique:firstLengthBatch(symbol,4) " +
-                "select symbol,price,volume " +
-                "insert into outputStream ;";
-
-        ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
-        executionPlanRuntime.addCallback("query1", new QueryCallback() {
-            @Override
-            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
-                EventPrinter.print(timeStamp, inEvents, removeEvents);
-                inEventCount = inEventCount + inEvents.length;
-                eventArrived = true;
-            }
-
-        });
-
-        InputHandler inputHandler = executionPlanRuntime.getInputHandler("cseEventStream");
-        executionPlanRuntime.start();
-        inputHandler.send(new Object[]{"IBM", 700f, 0});
-        inputHandler.send(new Object[]{"WSO2", 60.5f, 1});
-        inputHandler.send(new Object[]{"ORACLE", 700f, 2});
-        Thread.sleep(500);
-        Assert.assertEquals(0, inEventCount);
-        Assert.assertFalse(eventArrived);
-        executionPlanRuntime.shutdown();
-    }
-
-    @Test
-    public void LengthBatchWindowTest2() throws InterruptedException {
+    public void uniqueLengthBatchWindowTest1() throws InterruptedException {
         log.info("Testing length batch window with no of events greater than window size");
 
         final int length = 4;
@@ -128,66 +95,7 @@ public class UniqueLengthBatchWindowTestCase {
     }
 
     @Test
-    public void lengthWindowBatchTestFirstUnique() throws InterruptedException {
-
-        final int length = 4;
-        final boolean isFirstUniqueEnabled = true;
-        SiddhiManager siddhiManager = new SiddhiManager();
-        String cseEventStream = "" +
-                "define stream cseEventStream (symbol string, price float, volume int);";
-        String query = "" +
-                "@info(name = 'query1') " +
-                "from cseEventStream#window.unique:firstLengthBatch(symbol," + length + ") " +
-                "select symbol,price, volume " +
-                "insert all events into outputStream ;";
-
-        ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
-        executionPlanRuntime.addCallback("query1", new QueryCallback() {
-            @Override
-            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
-                EventPrinter.print(timeStamp, inEvents, removeEvents);
-                if (inEvents != null) {
-                    inEventCount = inEventCount + inEvents.length;
-                }
-                if (removeEvents != null) {
-                    removeEventCount = removeEventCount + removeEvents.length;
-                }
-                eventArrived = true;
-            }
-        });
-
-        InputHandler inputHandler = executionPlanRuntime.getInputHandler("cseEventStream");
-        executionPlanRuntime.start();
-//        for(int i=0;i<=5000000;i++){
-        inputHandler.send(new Object[]{"IBM", 700f, 1});
-        inputHandler.send(new Object[]{"WSO2", 60.5f, 2});
-        inputHandler.send(new Object[]{"WSO2", 60.5f, 3});
-        inputHandler.send(new Object[]{"IBM", 700f, 4});
-        inputHandler.send(new Object[]{"IBM1", 700f, 5});
-        inputHandler.send(new Object[]{"WSO2", 61.5f, 6});
-        inputHandler.send(new Object[]{"IBM2", 700f, 7});
-        inputHandler.send(new Object[]{"WSO23", 60.5f, 8});
-        inputHandler.send(new Object[]{"IBM", 700f, 9});
-        inputHandler.send(new Object[]{"WSO2", 60.5f, 10});
-        inputHandler.send(new Object[]{"WSO2", 60.5f, 11});
-        inputHandler.send(new Object[]{"IBM3", 700f, 12});
-        inputHandler.send(new Object[]{"WSO23", 60.5f, 13});
-        inputHandler.send(new Object[]{"IBM", 700f, 14});
-        inputHandler.send(new Object[]{"WSO22", 60.5f, 15});
-        inputHandler.send(new Object[]{"WSO2", 60.5f, 16});
-        inputHandler.send(new Object[]{"WSO2", 60.5f, 17});
-        inputHandler.send(new Object[]{"IBM3", 700f, 18});
-        inputHandler.send(new Object[]{"IBM1", 700f, 19});
-        inputHandler.send(new Object[]{"WSO23", 61.5f, 20});
-//        }
-        Assert.assertEquals(16, inEventCount);
-        Assert.assertEquals(12, removeEventCount);
-        Assert.assertTrue(eventArrived);
-        executionPlanRuntime.shutdown();
-    }
-
-    @Test
-    public void LengthBatchWindowTest3() throws InterruptedException {
+    public void uniqueLengthBatchWindowTest2() throws InterruptedException {
         log.info("Testing length batch window with no of events greater than window size");
 
         final int length = 2;
@@ -241,7 +149,8 @@ public class UniqueLengthBatchWindowTestCase {
     }
 
     @Test
-    public void LengthBatchWindowTest4() throws InterruptedException {
+    public void uniqueLengthBatchWindowTest3() throws InterruptedException {
+        log.info("UniqueLengthBatchWindow Test3");
 
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
@@ -256,8 +165,8 @@ public class UniqueLengthBatchWindowTestCase {
             @Override
             public void receive(Event[] events) {
                 EventPrinter.print(events);
-                for (Event event : events) {
-                    inEventCount++;
+                if (events != null) {
+                    inEventCount += events.length;
                 }
                 eventArrived = true;
             }
@@ -279,7 +188,8 @@ public class UniqueLengthBatchWindowTestCase {
     }
 
     @Test
-    public void LengthBatchWindowTest5() throws InterruptedException {
+    public void uniqueLengthBatchWindowTest4() throws InterruptedException {
+        log.info("UniqueLengthBatchWindow Test4");
 
         final int length = 2;
         SiddhiManager siddhiManager = new SiddhiManager();
@@ -319,7 +229,8 @@ public class UniqueLengthBatchWindowTestCase {
     }
 
     @Test
-    public void LengthBatchWindowTest6() throws InterruptedException {
+    public void uniqueLengthBatchWindowTest5() throws InterruptedException {
+        log.info("UniqueLengthBatchWindow Test5");
 
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
@@ -365,7 +276,8 @@ public class UniqueLengthBatchWindowTestCase {
     }
 
     @Test
-    public void LengthBatchWindowTest7() throws InterruptedException {
+    public void uniqueLengthBatchWindowTest6() throws InterruptedException {
+        log.info("UniqueLengthBatchWindow Test6");
 
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
@@ -412,8 +324,8 @@ public class UniqueLengthBatchWindowTestCase {
     }
 
     @Test
-    public void LengthBatchWindowTest8() throws InterruptedException {
-        log.info("LengthBatchWindow Test8");
+    public void uniqueLengthBatchWindowTest7() throws InterruptedException {
+        log.info("UniqueLengthBatchWindow Test7");
 
         SiddhiManager siddhiManager = new SiddhiManager();
         String streams = "" +
@@ -461,8 +373,8 @@ public class UniqueLengthBatchWindowTestCase {
     }
 
     @Test
-    public void LengthBatchWindowTest9() throws InterruptedException {
-        log.info("LengthBatchWindow Test9");
+    public void uniqueLengthBatchWindowTest8() throws InterruptedException {
+        log.info("UniqueLengthBatchWindow Test8");
 
         SiddhiManager siddhiManager = new SiddhiManager();
         String streams = "" +

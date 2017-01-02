@@ -71,7 +71,6 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     private boolean isStartTimeEnabled = false;
     private long startTime = 0;
     private VariableExpressionExecutor uniqueKey;
-    protected boolean isFirstUniqueEnabled = false;
 
     /**
      * The setScheduler method of the TimeWindowProcessor, As scheduler is private variable,
@@ -91,12 +90,6 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     @Override
     public Scheduler getScheduler() {
         return scheduler;
-    }
-
-    protected void init(ExpressionExecutor[] attributeExpressionExecutors, ExecutionPlanContext executionPlanContext,
-                        boolean isFirstUniqueEnabled){
-        this.isFirstUniqueEnabled = isFirstUniqueEnabled;
-        this.init(attributeExpressionExecutors, executionPlanContext);
     }
 
     /**
@@ -160,11 +153,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
             }
             // isStartTimeEnabled used to set start time
             if (attributeExpressionExecutors[2] instanceof ConstantExpressionExecutor) {
-                if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.BOOL) {
-                    this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
-                            attributeExpressionExecutors[2]).getValue());
-
-                } else if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.INT) {
+                if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.INT) {
                     isStartTimeEnabled = true;
                     startTime = Integer.parseInt(String
                             .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
@@ -198,17 +187,15 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
                            StreamEventCloner streamEventCloner) {
         synchronized (this) {
+            long currentTime = executionPlanContext.getTimestampGenerator().currentTime();
             if (nextEmitTime == -1) {
-                long currentTime = executionPlanContext.getTimestampGenerator().currentTime();
                 if (isStartTimeEnabled) {
                     nextEmitTime = getNextEmitTime(currentTime);
                 } else {
-                    nextEmitTime = executionPlanContext.getTimestampGenerator().currentTime()
-                            + timeInMilliSeconds;
+                    nextEmitTime = currentTime + timeInMilliSeconds;
                 }
                 scheduler.notifyAt(nextEmitTime);
             }
-            long currentTime = executionPlanContext.getTimestampGenerator().currentTime();
             boolean sendEvents;
             if (currentTime >= nextEmitTime) {
                 nextEmitTime += timeInMilliSeconds;
@@ -266,8 +253,8 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
         }
     }
 
-    protected void addUniqueEvent(Map<Object, StreamEvent> uniqueEventMap ,
-                                                         VariableExpressionExecutor uniqueKey, StreamEvent clonedStreamEvent) {
+    protected void addUniqueEvent(Map<Object, StreamEvent> uniqueEventMap,
+                                  VariableExpressionExecutor uniqueKey, StreamEvent clonedStreamEvent) {
         if (!uniqueEventMap.containsKey(clonedStreamEvent
                 .getAttribute(uniqueKey.getPosition()))) {
             uniqueEventMap.put(clonedStreamEvent
