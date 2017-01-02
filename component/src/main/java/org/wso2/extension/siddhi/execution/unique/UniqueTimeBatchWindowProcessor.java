@@ -71,7 +71,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     private boolean isStartTimeEnabled = false;
     private long startTime = 0;
     private VariableExpressionExecutor uniqueKey;
-    private boolean isFirstUniqueEnabled = false;
+    protected boolean isFirstUniqueEnabled = false;
 
     /**
      * The setScheduler method of the TimeWindowProcessor, As scheduler is private variable,
@@ -91,6 +91,12 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
     @Override
     public Scheduler getScheduler() {
         return scheduler;
+    }
+
+    protected void init(ExpressionExecutor[] attributeExpressionExecutors, ExecutionPlanContext executionPlanContext,
+                        boolean isFirstUniqueEnabled){
+        this.isFirstUniqueEnabled = isFirstUniqueEnabled;
+        this.init(attributeExpressionExecutors, executionPlanContext);
     }
 
     /**
@@ -175,53 +181,8 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                         "for time parameter but found a dynamic attribute "
                         + attributeExpressionExecutors[2].getReturnType());
             }
-        } else if (attributeExpressionExecutors.length == 4) {
-            if (attributeExpressionExecutors[0] instanceof VariableExpressionExecutor) {
-                this.uniqueKey = (VariableExpressionExecutor) attributeExpressionExecutors[0];
-            } else {
-                throw new ExecutionPlanValidationException("Unique Length Batch window should have variable " +
-                        "for Unique Key parameter but found an attribute " +
-                        attributeExpressionExecutors[0].getClass().getCanonicalName());
-            }
-            if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
-                if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.INT) {
-                    timeInMilliSeconds = (Integer)
-                            ((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue();
-                } else if (attributeExpressionExecutors[1].getReturnType() == Attribute.Type.LONG) {
-                    timeInMilliSeconds = (Long)
-                            ((ConstantExpressionExecutor) attributeExpressionExecutors[1]).getValue();
-                } else {
-                    throw new ExecutionPlanValidationException("UniqueTimeBatch window's parameter time should be either" +
-                            " int or long, but found " + attributeExpressionExecutors[1].getReturnType());
-                }
-            } else {
-                throw new ExecutionPlanValidationException("Unique Time Batch window should have constant " +
-                        "for time parameter but found a dynamic attribute "
-                        + attributeExpressionExecutors[1].getClass().getCanonicalName());
-            }
-            // isStartTimeEnabled used to set start time
-            isStartTimeEnabled = true;
-            if (attributeExpressionExecutors[2] instanceof ConstantExpressionExecutor) {
-                if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.INT) {
-                    startTime = Integer.parseInt(String
-                            .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
-                } else {
-                    startTime = Long.parseLong(String
-                            .valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue()));
-                }
-            } else {
-                throw new ExecutionPlanValidationException("Unique Time Batch window's parameter startTime should be either" +
-                        " int or long, but found " + attributeExpressionExecutors[2].getReturnType());
-            }
-            if (attributeExpressionExecutors[3] instanceof ConstantExpressionExecutor) {
-                this.isFirstUniqueEnabled = (boolean) (((ConstantExpressionExecutor)
-                        attributeExpressionExecutors[3]).getValue());
-            } else {
-                throw new ExecutionPlanValidationException("Unique Time Batch window's parameter isFirstUniqueEnabled should be" +
-                        " bool, but found " + attributeExpressionExecutors[3].getReturnType());
-            }
         } else {
-            throw new ExecutionPlanValidationException("Unique Time Batch window should only have two or Three or four parameters. " +
+            throw new ExecutionPlanValidationException("Unique Time Batch window should only have two or Three parameters. " +
                     "but found " + attributeExpressionExecutors.length + " input attributes");
         }
     }
@@ -262,16 +223,7 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
                     continue;
                 }
                 StreamEvent clonedStreamEvent = streamEventCloner.copyStreamEvent(streamEvent);
-                if (!isFirstUniqueEnabled) {
-                    uniqueEventMap.put(clonedStreamEvent
-                            .getAttribute(uniqueKey.getPosition()), clonedStreamEvent);
-                } else {
-                    if (!uniqueEventMap.containsKey(clonedStreamEvent
-                            .getAttribute(uniqueKey.getPosition()))) {
-                        uniqueEventMap.put(clonedStreamEvent
-                                .getAttribute(uniqueKey.getPosition()), clonedStreamEvent);
-                    }
-                }
+                addUniqueEvent(uniqueEventMap, uniqueKey, clonedStreamEvent);
             }
             streamEventChunk.clear();
             if (sendEvents) {
@@ -311,6 +263,15 @@ public class UniqueTimeBatchWindowProcessor extends WindowProcessor implements S
             streamEventChunk.setBatch(true);
             nextProcessor.process(streamEventChunk);
             streamEventChunk.setBatch(false);
+        }
+    }
+
+    protected void addUniqueEvent(Map<Object, StreamEvent> uniqueEventMap ,
+                                                         VariableExpressionExecutor uniqueKey, StreamEvent clonedStreamEvent) {
+        if (!uniqueEventMap.containsKey(clonedStreamEvent
+                .getAttribute(uniqueKey.getPosition()))) {
+            uniqueEventMap.put(clonedStreamEvent
+                    .getAttribute(uniqueKey.getPosition()), clonedStreamEvent);
         }
     }
 

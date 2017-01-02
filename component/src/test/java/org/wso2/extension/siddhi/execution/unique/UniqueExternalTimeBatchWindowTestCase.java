@@ -33,7 +33,7 @@ import org.wso2.siddhi.core.util.EventPrinter;
 public class UniqueExternalTimeBatchWindowTestCase {
 
 
-    private static final Logger log = Logger.getLogger(TimeWindowTestCase.class);
+    private static final Logger log = Logger.getLogger(UniqueExternalTimeBatchWindowTestCase.class);
     private int inEventCount;
     private int removeEventCount;
     private boolean eventArrived;
@@ -58,7 +58,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip, timestamp, 1 sec, 0, 2 sec) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip, timestamp, 1 sec, 0, 2 sec) " +
                 "select timestamp, ip, count() as total  " +
                 "insert into uniqueIps ;";
 
@@ -100,17 +100,17 @@ public class UniqueExternalTimeBatchWindowTestCase {
         inputHandler.send(new Object[]{1366335804599l, "192.10.1.3"});
         inputHandler.send(new Object[]{1366335804600l, "192.10.1.5"});
         inputHandler.send(new Object[]{1366335804607l, "192.10.1.6"});
-
         inputHandler.send(new Object[]{1366335805599l, "192.10.1.4"});
         inputHandler.send(new Object[]{1366335805600l, "192.10.1.4"});
         inputHandler.send(new Object[]{1366335805607l, "192.10.1.6"});
         Thread.sleep(2100);
+
         inputHandler.send(new Object[]{1366335805606l, "192.10.1.6"});
         inputHandler.send(new Object[]{1366335805605l, "192.10.1.8"});
         Thread.sleep(2100);
+
         inputHandler.send(new Object[]{1366335805606l, "192.10.1.6"});
         inputHandler.send(new Object[]{1366335805605l, "192.10.1.92"});
-
         inputHandler.send(new Object[]{1366335806606l, "192.10.1.9"});
         inputHandler.send(new Object[]{1366335806690l, "192.10.1.10"});
         Thread.sleep(3000);
@@ -131,7 +131,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip,timestamp, 1 sec, 0, 6 sec) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip,timestamp, 1 sec, 0, 6 sec) " +
                 "select timestamp, ip, count() as total  " +
                 "insert all events into uniqueIps ;";
 
@@ -181,7 +181,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip,timestamp, 1 sec) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip,timestamp, 1 sec) " +
                 "select timestamp, ip, count() as total  " +
                 "insert all events into uniqueIps ;";
 
@@ -236,7 +236,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip, timestamp, 1 sec) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip, timestamp, 1 sec) " +
                 "select timestamp, ip, count() as total  " +
                 "insert all events into uniqueIps ;";
 
@@ -293,7 +293,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip,timestamp, 1 sec, 0, 3 sec) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip,timestamp, 1 sec, 0, 3 sec) " +
                 "select timestamp, ip, count() as total  " +
                 "insert all events into uniqueIps ;";
 
@@ -348,7 +348,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip,timestamp, 1 sec, 0, 3 sec) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip,timestamp, 1 sec, 0, 3 sec) " +
                 "select timestamp, ip, count() as total  " +
                 "insert all events into uniqueIps ;";
 
@@ -410,7 +410,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip,timestamp, 1 sec, 0, 2 sec) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip,timestamp, 1 sec, 0, 2 sec) " +
                 "select timestamp, ip, count() as total  " +
                 "insert all events into uniqueIps ;";
 
@@ -481,7 +481,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip,timestamp, 1 sec, 0, 2 sec) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip,timestamp, 1 sec, 0, 2 sec) " +
                 "select timestamp, ip, count() as total  " +
                 "insert all events into uniqueIps ;";
 
@@ -551,7 +551,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip, timestamp, 1 sec, 0, 2 sec) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip, timestamp, 1 sec, 0, 2 sec) " +
                 "select timestamp, ip, count() as total  " +
                 "insert into uniqueIps ;";
 
@@ -622,7 +622,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip, timestamp, 1 sec, 0) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip, timestamp, 1 sec, 0) " +
                 "select timestamp, ip, count() as total  " +
                 "insert into uniqueIps ;";
 
@@ -687,7 +687,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream twitterStream (timestamp long, user string, tweet string, company string, ip string); ";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from cseEventStream#window.uniqueExternalTimeBatch(ip,timestamp, 1 sec, 0) join twitterStream#window.uniqueExternalTimeBatch(ip, timestamp, 1 sec, 0) " +
+                "from cseEventStream#window.unique:externalTimeBatch(ip,timestamp, 1 sec, 0) join twitterStream#window.unique:externalTimeBatch(ip, timestamp, 1 sec, 0) " +
                 "on cseEventStream.symbol== twitterStream.company " +
                 "select cseEventStream.symbol as symbol, twitterStream.tweet, cseEventStream.price " +
                 "insert into outputStream ;";
@@ -735,7 +735,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream twitterStream (timestamp long, user string, tweet string, company string, ip string); ";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from cseEventStream#window.uniqueExternalTimeBatch(ip,timestamp, 1 sec, 0) join twitterStream#window.uniqueExternalTimeBatch(ip, timestamp, 1 sec, 0) " +
+                "from cseEventStream#window.unique:externalTimeBatch(ip,timestamp, 1 sec, 0) join twitterStream#window.unique:externalTimeBatch(ip, timestamp, 1 sec, 0) " +
                 "on cseEventStream.symbol== twitterStream.company " +
                 "select cseEventStream.symbol as symbol, twitterStream.tweet, cseEventStream.price " +
                 "insert all events into outputStream ;";
@@ -783,7 +783,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip, timestamp, 1 sec, 0, -1, false) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip, timestamp, 1 sec, 0, -1, false) " +
                 "select timestamp, ip, count() as total  " +
                 "insert into uniqueIps ;";
 
@@ -849,7 +849,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip, timestamp, 1 sec, 0, -1, true) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip, timestamp, 1 sec, 0, -1, true) " +
                 "select timestamp, ip, count() as total  " +
                 "insert into uniqueIps ;";
 
@@ -916,7 +916,7 @@ public class UniqueExternalTimeBatchWindowTestCase {
                 "define stream LoginEvents (timestamp long, ip string, val int) ;";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.uniqueExternalTimeBatch(ip, timestamp, 1 sec, 0, 2 sec) " +
+                "from LoginEvents#window.unique:externalTimeBatch(ip, timestamp, 1 sec, 0, 2 sec) " +
                 "select timestamp, ip, count() as totalCount, sum(val) as totalSum  " +
                 "insert into uniqueIps ;";
 

@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class UniqueWindowProcessor extends WindowProcessor implements FindableProcessor {
+public class UniqueEverWindowProcessor extends WindowProcessor implements FindableProcessor {
     private ConcurrentHashMap<String, StreamEvent> map = new ConcurrentHashMap<String, StreamEvent>();
     private VariableExpressionExecutor[] variableExpressionExecutors;
 

@@ -29,20 +29,22 @@ import org.wso2.siddhi.core.query.output.callback.QueryCallback;
 import org.wso2.siddhi.core.stream.input.InputHandler;
 import org.wso2.siddhi.core.util.EventPrinter;
 
-public class FirstUniqueWindowTestCase {
-    private static final Logger log = Logger.getLogger(FirstUniqueWindowTestCase.class);
+public class UniqueEverWindowTestCase {
+    private static final Logger log = Logger.getLogger(UniqueEverWindowTestCase.class);
     private int count;
+    private long value;
     private boolean eventArrived;
 
     @Before
     public void init() {
         count = 0;
+        value = 0;
         eventArrived = false;
     }
 
     @Test
-    public void firstUniqueWindowTest1() throws InterruptedException {
-        log.info("firstUniqueWindow test1");
+    public void uniqueWindowTest1() throws InterruptedException {
+        log.info("uniqueWindow test1");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 
@@ -50,8 +52,8 @@ public class FirstUniqueWindowTestCase {
                 "define stream LoginEvents (timeStamp long, ip string);";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.firstUnique(ip) " +
-                "select ip " +
+                "from LoginEvents#window.unique:ever(ip) " +
+                "select count(ip) as ipCount, ip " +
                 "insert into uniqueIps ;";
 
         ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
@@ -61,10 +63,7 @@ public class FirstUniqueWindowTestCase {
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
                 if (inEvents != null) {
-                    count = count + inEvents.length;
-                }
-                if (removeEvents != null) {
-                    Assert.fail("Remove events emitted");
+                    value = (Long) inEvents[inEvents.length - 1].getData(0);
                 }
                 eventArrived = true;
             }
@@ -83,23 +82,23 @@ public class FirstUniqueWindowTestCase {
         Thread.sleep(1000);
 
         Assert.assertEquals("Event arrived", true, eventArrived);
-        Assert.assertEquals("Number of output event value", 3, count);
-        executionPlanRuntime.shutdown();
+        Assert.assertEquals("Event max value", 3, value);
 
+        executionPlanRuntime.shutdown();
     }
 
     @Test
-    public void firstUniqueWindowTest2() throws InterruptedException {
-        log.info("firstUniqueWindow test2");
+    public void uniqueWindowTest2() throws InterruptedException {
+        log.info("uniqueWindow test2");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 
         String cseEventStream = "" +
-                "define stream LoginEvents (timeStamp long, ip string);";
+                "define stream LoginEvents (id String , timeStamp long, ip string);";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.firstUnique(ip) " +
-                "select ip " +
+                "from LoginEvents#window.unique:ever(ip) " +
+                "select id, count(ip) as ipCount, ip " +
                 "insert into uniqueIps ;";
 
         ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
@@ -109,10 +108,7 @@ public class FirstUniqueWindowTestCase {
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
                 if (inEvents != null) {
-                    count = count + inEvents.length;
-                }
-                if (removeEvents != null) {
-                    Assert.fail("Remove events emitted");
+                    value = (Long) inEvents[inEvents.length - 1].getData(1);
                 }
                 eventArrived = true;
             }
@@ -122,18 +118,18 @@ public class FirstUniqueWindowTestCase {
         InputHandler inputHandler = executionPlanRuntime.getInputHandler("LoginEvents");
         executionPlanRuntime.start();
 
-        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
-        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.12"});
-        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
-        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
-        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{"A1", System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{"A2", System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{"A3", System.currentTimeMillis(), "192.10.1.4"});
+        inputHandler.send(new Object[]{"A4", System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{"A5", System.currentTimeMillis(), "192.10.1.5"});
 
         Thread.sleep(1000);
 
         Assert.assertEquals("Event arrived", true, eventArrived);
-        Assert.assertEquals("Number of output event value", 2, count);
-        executionPlanRuntime.shutdown();
+        Assert.assertEquals("Event max value", 3, value);
 
+        executionPlanRuntime.shutdown();
     }
 
 }

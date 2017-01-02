@@ -16,10 +16,12 @@
 # under the License.
 #
 
+ever=org.wso2.extension.siddhi.execution.unique.UniqueEverWindowProcessor
+first=org.wso2.extension.siddhi.execution.unique.UniqueFirstWindowProcessor
 length=org.wso2.extension.siddhi.execution.unique.UniqueLengthWindowProcessor
 lengthBatch=org.wso2.extension.siddhi.execution.unique.UniqueLengthBatchWindowProcessor
+firstLengthBatch=org.wso2.extension.siddhi.execution.unique.UniqueFirstLengthBatchWindowProcessor
 time=org.wso2.extension.siddhi.execution.unique.UniqueTimeWindowProcessor
 timeBatch=org.wso2.extension.siddhi.execution.unique.UniqueTimeBatchWindowProcessor
-unique=org.wso2.extension.siddhi.execution.unique.UniqueWindowProcessor
-firstUnique=org.wso2.extension.siddhi.execution.unique.FirstUniqueWindowProcessor
-uniqueExternalTimeBatch=org.wso2.extension.siddhi.execution.unique.UniqueExternalTimeBatchWindowProcessor
+firstTimeBatch=org.wso2.extension.siddhi.execution.unique.UniqueFirstTimeBatchWindowProcessor
+externalTimeBatch=org.wso2.extension.siddhi.execution.unique.UniqueExternalTimeBatchWindowProcessor

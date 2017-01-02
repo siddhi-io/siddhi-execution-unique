@@ -46,14 +46,12 @@ public class UniqueLengthBatchWindowTestCase {
 
     @Test
     public void LengthBatchWindowTest1() throws InterruptedException {
-        log.info("Testing length batch window with no of events smaller than window size");
-
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
                 "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from cseEventStream#window.unique:lengthBatch(symbol,4) " +
+                "from cseEventStream#window.unique:firstLengthBatch(symbol,4) " +
                 "select symbol,price,volume " +
                 "insert into outputStream ;";
 
@@ -62,7 +60,6 @@ public class UniqueLengthBatchWindowTestCase {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
-                Assert.fail("No events should arrive");
                 inEventCount = inEventCount + inEvents.length;
                 eventArrived = true;
             }
@@ -140,7 +137,7 @@ public class UniqueLengthBatchWindowTestCase {
                 "define stream cseEventStream (symbol string, price float, volume int);";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from cseEventStream#window.unique:lengthBatch(symbol," + length + "," + isFirstUniqueEnabled + ") " +
+                "from cseEventStream#window.unique:firstLengthBatch(symbol," + length + ") " +
                 "select symbol,price, volume " +
                 "insert all events into outputStream ;";
 

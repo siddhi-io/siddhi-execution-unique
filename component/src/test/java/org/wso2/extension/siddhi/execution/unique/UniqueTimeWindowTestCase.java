@@ -32,13 +32,11 @@ import org.wso2.siddhi.core.util.EventPrinter;
 public class UniqueTimeWindowTestCase {
     private static final Logger log = Logger.getLogger(UniqueTimeWindowTestCase.class);
     private int inEventCount;
-    private int removeEventCount;
     private boolean eventArrived;
 
     @Before
     public void init() {
         inEventCount = 0;
-        removeEventCount = 0;
         eventArrived = false;
     }
 

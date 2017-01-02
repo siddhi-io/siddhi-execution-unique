@@ -43,49 +43,6 @@ public class UniqueTimeBatchWindowTestCase {
 
     @Test
     public void timeWindowBatchTest1() throws InterruptedException {
-        SiddhiManager siddhiManager = new SiddhiManager();
-        final boolean isFirstUniqueEnabled = true;
-        String cseEventStream = "" +
-                "define stream cseEventStream (symbol string, price float, volume int);";
-        String query = "" +
-                "@info(name = 'query1') " +
-                "from cseEventStream#window.unique:timeBatch(symbol,1 sec," + 100000 + "," + isFirstUniqueEnabled + ") " +
-                "select symbol,price,volume " +
-                "insert all events into outputStream ;";
-
-        ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
-        executionPlanRuntime.addCallback("query1", new QueryCallback() {
-            @Override
-            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
-                EventPrinter.print(timeStamp, inEvents, removeEvents);
-                if (inEventCount == 0) {
-                    Assert.assertTrue("Remove Events will only arrive after the second time period. ", removeEvents == null);
-                }
-                if (inEvents != null) {
-                    inEventCount = inEventCount + inEvents.length;
-                } else if (removeEvents != null) {
-                    removeEventCount = removeEventCount + removeEvents.length;
-                }
-                eventArrived = true;
-            }
-
-        });
-
-        InputHandler inputHandler = executionPlanRuntime.getInputHandler("cseEventStream");
-        executionPlanRuntime.start();
-        inputHandler.send(new Object[]{"IBM", 700f, 0});
-        inputHandler.send(new Object[]{"WSO2", 60.5f, 1});
-        inputHandler.send(new Object[]{"IBM", 700f, 2});
-        inputHandler.send(new Object[]{"WSO2", 60.5f, 3});
-        Thread.sleep(3000);
-        Assert.assertEquals(2, inEventCount);
-        Assert.assertEquals(2, removeEventCount);
-        Assert.assertTrue(eventArrived);
-        executionPlanRuntime.shutdown();
-    }
-
-    @Test
-    public void timeWindowBatchTest2() throws InterruptedException {
 
         SiddhiManager siddhiManager = new SiddhiManager();
         String cseEventStream = "" +
@@ -105,7 +62,7 @@ public class UniqueTimeBatchWindowTestCase {
                     inEventCount = inEventCount + inEvents.length;
                 }
                 if (removeEvents != null) {
-//                    Assert.assertTrue("InEvents arrived before RemoveEvents", inEventCount > removeEventCount);
+                    Assert.assertTrue("InEvents arrived before RemoveEvents", inEventCount > removeEventCount);
                     removeEventCount = removeEventCount + removeEvents.length;
                 }
                 eventArrived = true;
