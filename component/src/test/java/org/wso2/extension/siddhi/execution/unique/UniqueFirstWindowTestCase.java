@@ -133,7 +133,109 @@ public class UniqueFirstWindowTestCase {
         Assert.assertEquals("Event arrived", true, eventArrived);
         Assert.assertEquals("Number of output event value", 2, count);
         executionPlanRuntime.shutdown();
-
     }
 
+    @Test
+    public void firstUniqueWindowTest3() throws InterruptedException {
+        log.info("UniqueFirstWindow test3");
+
+        SiddhiManager siddhiManager = new SiddhiManager();
+
+        String cseEventStream = "" +
+                "define stream LoginEvents (timeStamp long, ip string);";
+        String query = "" +
+                "@info(name = 'query1') " +
+                "from LoginEvents#window.unique:first(ip,5) " +
+                "select ip " +
+                "insert into uniqueIps ;";
+
+        ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
+
+        executionPlanRuntime.addCallback("query1", new QueryCallback() {
+            @Override
+            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
+                EventPrinter.print(timeStamp, inEvents, removeEvents);
+                if (inEvents != null) {
+                    count = count + inEvents.length;
+                }
+                if (removeEvents != null) {
+                    Assert.fail("Remove events emitted");
+                }
+                eventArrived = true;
+            }
+
+        });
+
+        InputHandler inputHandler = executionPlanRuntime.getInputHandler("LoginEvents");
+        executionPlanRuntime.start();
+
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.12"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.4"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.13"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.8"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.9"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.10"});
+
+        Thread.sleep(1000);
+
+        Assert.assertEquals("Event arrived", true, eventArrived);
+        Assert.assertEquals("Number of output event value", 3, count);
+        executionPlanRuntime.shutdown();
+    }
+
+    @Test
+    public void firstUniqueWindowTest4() throws InterruptedException {
+        log.info("UniqueFirstWindow test4");
+
+        SiddhiManager siddhiManager = new SiddhiManager();
+
+        String cseEventStream = "" +
+                "define stream LoginEvents (timeStamp long, ip string);";
+        String query = "" +
+                "@info(name = 'query1') " +
+                "from LoginEvents#window.unique:first(ip,10) " +
+                "select ip " +
+                "insert into uniqueIps ;";
+
+        ExecutionPlanRuntime executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(cseEventStream + query);
+
+        executionPlanRuntime.addCallback("query1", new QueryCallback() {
+            @Override
+            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
+                EventPrinter.print(timeStamp, inEvents, removeEvents);
+                if (inEvents != null) {
+                    count = count + inEvents.length;
+                }
+                if (removeEvents != null) {
+                    Assert.fail("Remove events emitted");
+                }
+                eventArrived = true;
+            }
+
+        });
+
+        InputHandler inputHandler = executionPlanRuntime.getInputHandler("LoginEvents");
+        executionPlanRuntime.start();
+
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.12"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.4"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.3"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.13"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.8"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.9"});
+        inputHandler.send(new Object[]{System.currentTimeMillis(), "192.10.1.10"});
+
+        Thread.sleep(1000);
+
+        Assert.assertEquals("Event arrived", true, eventArrived);
+        Assert.assertEquals("Number of output event value", 7, count);
+        executionPlanRuntime.shutdown();
+    }
 }
