@@ -25,15 +25,18 @@ import org.wso2.siddhi.core.event.ComplexEventChunk;
 import org.wso2.siddhi.core.event.state.StateEvent;
 import org.wso2.siddhi.core.event.stream.StreamEvent;
 import org.wso2.siddhi.core.event.stream.StreamEventCloner;
+import org.wso2.siddhi.core.executor.ConstantExpressionExecutor;
 import org.wso2.siddhi.core.executor.ExpressionExecutor;
 import org.wso2.siddhi.core.executor.VariableExpressionExecutor;
 import org.wso2.siddhi.core.query.processor.Processor;
 import org.wso2.siddhi.core.query.processor.stream.window.FindableProcessor;
 import org.wso2.siddhi.core.query.processor.stream.window.WindowProcessor;
 import org.wso2.siddhi.core.table.EventTable;
-import org.wso2.siddhi.core.util.parser.OperatorParser;
 import org.wso2.siddhi.core.util.collection.operator.Finder;
 import org.wso2.siddhi.core.util.collection.operator.MatchingMetaStateHolder;
+import org.wso2.siddhi.core.util.parser.OperatorParser;
+import org.wso2.siddhi.query.api.definition.Attribute;
+import org.wso2.siddhi.query.api.exception.ExecutionPlanValidationException;
 import org.wso2.siddhi.query.api.expression.Expression;
 
 import java.util.List;
@@ -42,30 +45,63 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class UniqueFirstWindowProcessor extends WindowProcessor implements FindableProcessor {
     private ConcurrentHashMap<String, StreamEvent> map = new ConcurrentHashMap<String, StreamEvent>();
-    private VariableExpressionExecutor[] variableExpressionExecutors;
-
+    private VariableExpressionExecutor variableExpressionExecutors;
+    private ConstantExpressionExecutor constantExpressionExecutor;
+    private int maxLength = 0;
+    private int eventCount = 0;
 
     @Override
     protected void init(ExpressionExecutor[] attributeExpressionExecutors, ExecutionPlanContext executionPlanContext) {
-        variableExpressionExecutors = new VariableExpressionExecutor[attributeExpressionExecutors.length];
-        for (int i = 0; i < attributeExpressionExecutors.length; i++) {
-            variableExpressionExecutors[i] = (VariableExpressionExecutor) attributeExpressionExecutors[i];
+        if(attributeExpressionExecutors.length == 0){
+            throw new ExecutionPlanValidationException("UniqueFirst window should have at least one parameter', but found 0");
         }
-
+        else if(attributeExpressionExecutors.length > 2){
+            throw new ExecutionPlanValidationException("UniqueFirst window should have at most two parameters, but found "+attributeExpressionExecutors.length);
+        }
+        else if(attributeExpressionExecutors.length == 1){
+            variableExpressionExecutors = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+        }
+        else{
+            variableExpressionExecutors = (VariableExpressionExecutor) attributeExpressionExecutors[0];
+            constantExpressionExecutor = (ConstantExpressionExecutor) attributeExpressionExecutors[1];
+            if(!constantExpressionExecutor.getReturnType().equals(Attribute.Type.INT)){
+                throw new ExecutionPlanValidationException("UniqueFirst window's second parameter must be a constant integer");
+            }
+            maxLength = (int) constantExpressionExecutor.getValue();
+        }
     }
 
     @Override
     protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor, StreamEventCloner streamEventCloner) {
         synchronized (this) {
-            while (streamEventChunk.hasNext()) {
-                StreamEvent streamEvent = streamEventChunk.next();
+            if(constantExpressionExecutor == null) {
+                while (streamEventChunk.hasNext()) {
+                    StreamEvent streamEvent = streamEventChunk.next();
 
-                StreamEvent clonedEvent = streamEventCloner.copyStreamEvent(streamEvent);
-                clonedEvent.setType(StreamEvent.Type.EXPIRED);
+                    StreamEvent clonedEvent = streamEventCloner.copyStreamEvent(streamEvent);
+                    clonedEvent.setType(StreamEvent.Type.EXPIRED);
 
-                ComplexEvent oldEvent = map.putIfAbsent(generateKey(clonedEvent), clonedEvent);
-                if (oldEvent != null) {
-                    streamEventChunk.remove();
+                    ComplexEvent oldEvent = map.putIfAbsent(generateKey(clonedEvent), clonedEvent);
+                    if (oldEvent != null) {
+                        streamEventChunk.remove();
+                    }
+                }
+            }
+            else{
+                while (streamEventChunk.hasNext()) {
+                    StreamEvent streamEvent = streamEventChunk.next();
+
+                    StreamEvent clonedEvent = streamEventCloner.copyStreamEvent(streamEvent);
+                    clonedEvent.setType(StreamEvent.Type.EXPIRED);
+                    if(maxLength == eventCount){
+                        map.clear();
+                        eventCount = 0;
+                    }
+                    ComplexEvent oldEvent = map.putIfAbsent(generateKey(clonedEvent), clonedEvent);
+                    if (oldEvent != null) {
+                        streamEventChunk.remove();
+                    }
+                    eventCount += 1;
                 }
             }
         }
@@ -94,9 +130,7 @@ public class UniqueFirstWindowProcessor extends WindowProcessor implements Finda
 
     private String generateKey(StreamEvent event) {
         StringBuilder stringBuilder = new StringBuilder();
-        for (VariableExpressionExecutor executor : variableExpressionExecutors) {
-            stringBuilder.append(event.getAttribute(executor.getPosition()));
-        }
+        stringBuilder.append(event.getAttribute(variableExpressionExecutors.getPosition()));
         return stringBuilder.toString();
     }
 
