@@ -93,13 +93,12 @@ public class UniqueFirstWindowProcessor extends WindowProcessor implements Finda
 
                     StreamEvent clonedEvent = streamEventCloner.copyStreamEvent(streamEvent);
                     clonedEvent.setType(StreamEvent.Type.EXPIRED);
-                    if(eventCount < maxLength) {
-                        ComplexEvent oldEvent = map.putIfAbsent(generateKey(clonedEvent), clonedEvent);
-                        if (oldEvent != null) {
-                            streamEventChunk.remove();
-                        }
+                    if(maxLength == eventCount){
+                        map.clear();
+                        eventCount = 0;
                     }
-                    else{
+                    ComplexEvent oldEvent = map.putIfAbsent(generateKey(clonedEvent), clonedEvent);
+                    if (oldEvent != null) {
                         streamEventChunk.remove();
                     }
                     eventCount += 1;
@@ -131,9 +130,6 @@ public class UniqueFirstWindowProcessor extends WindowProcessor implements Finda
 
     private String generateKey(StreamEvent event) {
         StringBuilder stringBuilder = new StringBuilder();
-        /*for (VariableExpressionExecutor executor : variableExpressionExecutors) {
-            stringBuilder.append(event.getAttribute(executor.getPosition()));
-        }*/
         stringBuilder.append(event.getAttribute(variableExpressionExecutors.getPosition()));
         return stringBuilder.toString();
     }

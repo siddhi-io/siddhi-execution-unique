@@ -145,7 +145,7 @@ public class UniqueFirstWindowTestCase {
                 "define stream LoginEvents (timeStamp long, ip string);";
         String query = "" +
                 "@info(name = 'query1') " +
-                "from LoginEvents#window.unique:first(ip,5) " +
+                "from LoginEvents#window.unique:first(ip,3) " +
                 "select ip " +
                 "insert into uniqueIps ;";
 
@@ -183,7 +183,7 @@ public class UniqueFirstWindowTestCase {
         Thread.sleep(1000);
 
         Assert.assertEquals("Event arrived", true, eventArrived);
-        Assert.assertEquals("Number of output event value", 3, count);
+        Assert.assertEquals("Number of output event value", 8, count);
         executionPlanRuntime.shutdown();
     }
 
