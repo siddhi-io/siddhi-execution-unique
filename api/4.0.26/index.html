@@ -36,7 +36,7 @@
     
     
       
-        <title>4.0.21 - Siddhi-Execution-Unique</title>
+        <title>4.0.26 - Siddhi-Execution-Unique</title>
       
     
     
@@ -73,7 +73,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#api-docs-v4021" tabindex="1" class="md-skip">
+      <a href="#api-docs-v4026" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -99,7 +99,7 @@
                 Siddhi-Execution-Unique
               </span>
               <span class="md-header-nav__topic">
-                4.0.21
+                4.0.26
               </span>
             
           
@@ -201,66 +201,6 @@
           
           
 
-
-  <li class="md-nav__item">
-    <a href="../4.0.26/" title="4.0.26" class="md-nav__link">
-      4.0.26
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../4.0.25/" title="4.0.25" class="md-nav__link">
-      4.0.25
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../4.0.24/" title="4.0.24" class="md-nav__link">
-      4.0.24
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../4.0.23/" title="4.0.23" class="md-nav__link">
-      4.0.23
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../4.0.22/" title="4.0.22" class="md-nav__link">
-      4.0.22
-    </a>
-  </li>
-
-        
-          
-          
-          
-
   
 
 
@@ -272,11 +212,11 @@
     
     
       <label class="md-nav__link md-nav__link--active" for="__toc">
-        4.0.21
+        4.0.26
       </label>
     
-    <a href="./" title="4.0.21" class="md-nav__link md-nav__link--active">
-      4.0.21
+    <a href="./" title="4.0.26" class="md-nav__link md-nav__link--active">
+      4.0.26
     </a>
     
       
@@ -360,6 +300,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#timelengthbatch-window" title="timeLengthBatch (Window)" class="md-nav__link">
+    timeLengthBatch (Window)
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -373,6 +320,66 @@
   
 </nav>
     
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../4.0.25/" title="4.0.25" class="md-nav__link">
+      4.0.25
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../4.0.24/" title="4.0.24" class="md-nav__link">
+      4.0.24
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../4.0.23/" title="4.0.23" class="md-nav__link">
+      4.0.23
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../4.0.22/" title="4.0.22" class="md-nav__link">
+      4.0.22
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../4.0.21/" title="4.0.21" class="md-nav__link">
+      4.0.21
+    </a>
   </li>
 
         
@@ -652,6 +659,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#timelengthbatch-window" title="timeLengthBatch (Window)" class="md-nav__link">
+    timeLengthBatch (Window)
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -674,7 +688,7 @@
               
                 
                 
-                <h1 id="api-docs-v4021">API Docs - v4.0.21</h1>
+                <h1 id="api-docs-v4026">API Docs - v4.0.26</h1>
 <h2 id="unique">Unique</h2>
 <h3 id="ever-window">ever <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
 <p style="word-wrap: break-word">This is a  window that is updated with the latest events based on a unique key parameter. When a new event that arrives, has the same value for the unique key parameter as an existing event, the existing event expires, and it is replaced by the later event.</p>
@@ -765,23 +779,23 @@ insert expired events into UniqueIps  ;
     <tr>
         <td style="vertical-align: top">start.time</td>
         <td style="vertical-align: top; word-wrap: break-word">This specifies an offset in milliseconds in order to start the window at a time different to the standard time.</td>
-        <td style="vertical-align: top">0</td>
+        <td style="vertical-align: top">Timestamp of first event</td>
         <td style="vertical-align: top">INT</td>
         <td style="vertical-align: top">Yes</td>
         <td style="vertical-align: top">No</td>
     </tr>
     <tr>
         <td style="vertical-align: top">time.out</td>
-        <td style="vertical-align: top; word-wrap: break-word">Time to wait for arrival of new event, before flushing and giving output for events belonging to a specific batch. If timeout is not provided, system waits till an event from next batch arrives to flush current batch.</td>
-        <td style="vertical-align: top">0</td>
+        <td style="vertical-align: top; word-wrap: break-word">Time to wait for arrival of new event, before flushing and giving output for events belonging to a specific batch.</td>
+        <td style="vertical-align: top">System waits till an event from next batch arrives to flush current batch</td>
         <td style="vertical-align: top">INT<br>LONG</td>
         <td style="vertical-align: top">Yes</td>
         <td style="vertical-align: top">No</td>
     </tr>
     <tr>
         <td style="vertical-align: top">replace.time.stamp.with.batch.end.time</td>
-        <td style="vertical-align: top; word-wrap: break-word">Replaces the time stamp value (That is pointed by the 2nd parameter) with the corresponding batch end time stamp.</td>
-        <td style="vertical-align: top">0</td>
+        <td style="vertical-align: top; word-wrap: break-word">Replaces the timestamp value (That is pointed by the 2nd parameter) with the corresponding batch end time stamp.</td>
+        <td style="vertical-align: top">false</td>
         <td style="vertical-align: top">INT<br>LONG</td>
         <td style="vertical-align: top">Yes</td>
         <td style="vertical-align: top">No</td>
@@ -911,7 +925,7 @@ insert all events into OutputStream ;
     <tr>
         <td style="vertical-align: top">start.time</td>
         <td style="vertical-align: top; word-wrap: break-word">This specifies an offset in milliseconds in order to start the window at a time different to the standard time.</td>
-        <td style="vertical-align: top">0</td>
+        <td style="vertical-align: top">Timestamp of first event</td>
         <td style="vertical-align: top">INT<br>LONG</td>
         <td style="vertical-align: top">Yes</td>
         <td style="vertical-align: top">No</td>
@@ -1007,7 +1021,9 @@ insert all events into OutputStream ;
 </table></p>
 <p><span id="examples" class="md-typeset" style="display: block; font-weight: bold;">Examples</span>
 <span id="example-1" class="md-typeset" style="display: block; color: rgba(0, 0, 0, 0.54); font-size: 12.8px; font-weight: bold;">EXAMPLE 1</span></p>
-<pre><code>define window CseEventWindow (symbol string, price float, volume int) from CseEventStream#window.unique:lengthBatch(symbol, 10)
+<pre><code>define window CseEventWindow (symbol string, price float, volume int)
+
+ from CseEventStream#window.unique:lengthBatch(symbol, 10)
 select symbol, price, volume
 insert expired events into OutputStream ;
 </code></pre>
@@ -1085,6 +1101,59 @@ insert expired events into OutputStream ;
     </tr>
     <tr>
         <td style="vertical-align: top">window.time</td>
+        <td style="vertical-align: top; word-wrap: break-word">The tumbling time period for which the window should hold events.</td>
+        <td style="vertical-align: top"></td>
+        <td style="vertical-align: top">INT<br>LONG</td>
+        <td style="vertical-align: top">No</td>
+        <td style="vertical-align: top">No</td>
+    </tr>
+    <tr>
+        <td style="vertical-align: top">start.time</td>
+        <td style="vertical-align: top; word-wrap: break-word">This specifies an offset in milliseconds in order to start the window at a time different to the standard time.</td>
+        <td style="vertical-align: top">Timestamp of first event</td>
+        <td style="vertical-align: top">INT<br>LONG</td>
+        <td style="vertical-align: top">Yes</td>
+        <td style="vertical-align: top">No</td>
+    </tr>
+</table></p>
+<p><span id="examples" class="md-typeset" style="display: block; font-weight: bold;">Examples</span>
+<span id="example-1" class="md-typeset" style="display: block; color: rgba(0, 0, 0, 0.54); font-size: 12.8px; font-weight: bold;">EXAMPLE 1</span></p>
+<pre><code>define stream CseEventStream (symbol string, price float, volume int)
+
+from CseEventStream#window.unique:timeBatch(symbol, 1 sec)
+select symbol, price, volume
+insert all events into OutputStream ;
+</code></pre>
+
+<p style="word-wrap: break-word">This window holds the latest unique events that arrive from the CseEventStream at a given time, and returns all evens to the OutputStream stream. It is updated every second based on the latest values for the symbol attribute.</p>
+
+<h3 id="timelengthbatch-window">timeLengthBatch <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
+<p style="word-wrap: break-word">This is a batch (tumbling) time length window that is updated with the latest events based on a unique key parameter. The window will tumble upon elapse of the time window or when length number of unique events have arrived. If a new event that arrives within the window period has a value for the key parameter which matches that of an existing event, the existing event expires and it is replaced by the later event. </p>
+
+<p><span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span></p>
+<pre><code>unique:timeLengthBatch(&lt;INT|LONG|FLOAT|BOOL|DOUBLE&gt; unique.key, &lt;INT|LONG&gt; window.time, &lt;INT|LONG&gt; start.time, &lt;INT&gt; window.length)
+</code></pre>
+
+<p><span id="query-parameters" class="md-typeset" style="display: block; color: rgba(0, 0, 0, 0.54); font-size: 12.8px; font-weight: bold;">QUERY PARAMETERS</span>
+<table>
+    <tr>
+        <th>Name</th>
+        <th style="min-width: 20em">Description</th>
+        <th>Default Value</th>
+        <th>Possible Data Types</th>
+        <th>Optional</th>
+        <th>Dynamic</th>
+    </tr>
+    <tr>
+        <td style="vertical-align: top">unique.key</td>
+        <td style="vertical-align: top; word-wrap: break-word">The attribute that should be checked for uniqueness.</td>
+        <td style="vertical-align: top"></td>
+        <td style="vertical-align: top">INT<br>LONG<br>FLOAT<br>BOOL<br>DOUBLE</td>
+        <td style="vertical-align: top">No</td>
+        <td style="vertical-align: top">No</td>
+    </tr>
+    <tr>
+        <td style="vertical-align: top">window.time</td>
         <td style="vertical-align: top; word-wrap: break-word">The sliding time period for which the window should hold events.</td>
         <td style="vertical-align: top"></td>
         <td style="vertical-align: top">INT<br>LONG</td>
@@ -1094,16 +1163,25 @@ insert expired events into OutputStream ;
     <tr>
         <td style="vertical-align: top">start.time</td>
         <td style="vertical-align: top; word-wrap: break-word">This specifies an offset in milliseconds in order to start the window at a time different to the standard time.</td>
-        <td style="vertical-align: top">0</td>
+        <td style="vertical-align: top">Timestamp of first event</td>
         <td style="vertical-align: top">INT<br>LONG</td>
         <td style="vertical-align: top">Yes</td>
+        <td style="vertical-align: top">No</td>
+    </tr>
+    <tr>
+        <td style="vertical-align: top">window.length</td>
+        <td style="vertical-align: top; word-wrap: break-word">The number of events the window should tumble.</td>
+        <td style="vertical-align: top"></td>
+        <td style="vertical-align: top">INT</td>
+        <td style="vertical-align: top">No</td>
         <td style="vertical-align: top">No</td>
     </tr>
 </table></p>
 <p><span id="examples" class="md-typeset" style="display: block; font-weight: bold;">Examples</span>
 <span id="example-1" class="md-typeset" style="display: block; color: rgba(0, 0, 0, 0.54); font-size: 12.8px; font-weight: bold;">EXAMPLE 1</span></p>
 <pre><code>define stream CseEventStream (symbol string, price float, volume int)
-from CseEventStream#window.unique:timeBatch(symbol, 1 sec)
+
+from CseEventStream#window.unique:timeLengthBatch(symbol, 1 sec, 20)
 select symbol, price, volume
 insert all events into OutputStream ;
 </code></pre>
@@ -1129,7 +1207,7 @@ insert all events into OutputStream ;
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../4.0.22/" title="4.0.22" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../.." title="Welcome to WSO2 Siddhi Execution Unique" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -1138,19 +1216,19 @@ insert all events into OutputStream ;
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                4.0.22
+                Welcome to WSO2 Siddhi Execution Unique
               </span>
             </div>
           </a>
         
         
-          <a href="../4.0.20/" title="4.0.20" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../4.0.25/" title="4.0.25" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                4.0.20
+                4.0.25
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
