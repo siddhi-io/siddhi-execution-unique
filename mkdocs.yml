@@ -10,7 +10,7 @@ repo_name: Siddhi-Execution-Unique
 repo_url: https://github.com/wso2-extensions/siddhi-execution-unique
 copyright: Copyright &copy; 2011 - 2018 WSO2
 theme:
-  name: 'material'
+  name: material
   logo: images/siddhi-logo-w.svg
   favicon: images/favicon.ico
   palette:
@@ -26,12 +26,13 @@ extra:
   - type: linkedin
     link: https://www.linkedin.com/groups/13553064
 markdown_extensions:
-  - admonition
-  - toc(permalink=true)
-  - codehilite(guess_lang=false)
+- admonition
+- toc(permalink=true)
+- codehilite(guess_lang=false)
 pages:
 - Welcome: index.md
 - API Docs:
+  - 4.0.27: api/4.0.27.md
   - 4.0.26: api/4.0.26.md
   - 4.0.25: api/4.0.25.md
   - 4.0.24: api/4.0.24.md
@@ -53,4 +54,3 @@ pages:
   - 4.0.7: api/4.0.7.md
   - latest: api/latest.md
 - License: license.md
-
