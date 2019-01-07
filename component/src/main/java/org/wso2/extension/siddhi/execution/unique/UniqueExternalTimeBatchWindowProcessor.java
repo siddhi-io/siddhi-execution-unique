@@ -60,13 +60,13 @@ import java.util.Map;
 @Extension(
         name = "externalTimeBatch",
         namespace = "unique",
-        description = "This is a batch (tumbling) time window that is determined based on external time"
-                + " (i.e., time stamps specified via an attribute in the events)."
+        description = "This is a batch (tumbling) time window that is determined based on an external time, i.e., " +
+                "time stamps that are specified via an attribute in the events."
                 + " It holds the latest unique events that arrived during the last window time period."
                 + " The unique events are determined based on the value for a specified unique key parameter."
                 + " When a new event arrives within the time window with a value for the unique key parameter"
                 + " that is the same as that of an existing event in the window,"
-                + " the existing event expires and it is replaced by the later event." ,
+                + " the existing event expires and it is replaced by the new event." ,
 
         parameters = {
                 @Parameter(name = "unique.key",
@@ -74,8 +74,8 @@ import java.util.Map;
                         type = {DataType.INT, DataType.LONG, DataType.FLOAT,
                                 DataType.BOOL, DataType.DOUBLE}),
                 @Parameter(name = "time.stamp",
-                        description = " The time which the window determines as current time and will act upon,"
-                                + " the value of this parameter should be monotonically increasing.",
+                        description = " The time which the window determines as the current time and acts upon."
+                                + " The value of this parameter should be monotonically increasing.",
                         type = { DataType.LONG}),
                 @Parameter(name = "window.time",
                         description = "The sliding time period for which the window should hold events.",
@@ -86,14 +86,14 @@ import java.util.Map;
                         defaultValue = "Timestamp of first event",
                         type = {DataType.INT}, optional = true),
                 @Parameter(name = "time.out",
-                        description = "Time to wait for arrival of new event, before flushing " +
-                                "and giving output for events belonging to a specific batch.",
+                        description = "Time to wait for arrival of a new event, before flushing " +
+                                "and returning the output for events belonging to a specific batch.",
                         type = {DataType.INT, DataType.LONG},
                         optional = true,
-                        defaultValue = "System waits till an event from next batch arrives to flush current batch") ,
+                        defaultValue = "The system waits till an event from the next batch arrives to flush " +
+                                "the current batch") ,
                 @Parameter(name = "replace.time.stamp.with.batch.end.time",
-                        description = "Replaces the timestamp value (That is pointed by the 2nd parameter) "
-                                + "with the corresponding batch end time stamp." ,
+                        description = "Replaces the 'timestamp' value with the corresponding batch end time stamp." ,
                         type = {DataType.INT, DataType.LONG},
                         optional = true,
                         defaultValue = "false")
@@ -106,11 +106,11 @@ import java.util.Map;
                                 "insert into UniqueIps ;",
 
                         description = "In this query, the window holds the latest unique events"
-                                + " that arrive from the LoginEvent stream during each second."
+                                + " that arrive from the 'LoginEvent' stream during each second."
                                 + " The latest events are determined based on the external time stamp."
-                                + " At a given time, all the events held in the window has a unique"
-                                + " values for the ip and monotonically increasing values for timestamp attributes."
-                                + " The events in the window are inserted into the UniqueIps output stream."
+                                + " At a given time, all the events held in the window have unique"
+                                + " values for the 'ip' and monotonically increasing values for 'timestamp' attributes."
+                                + " The events in the window are inserted into the 'UniqueIps' output stream."
                                 + " The system waits for 2 seconds"
                                 + " for the arrival of a new event before flushing the current batch."
                 )
