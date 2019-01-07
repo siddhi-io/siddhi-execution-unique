@@ -57,7 +57,7 @@ import static java.util.Collections.singletonMap;
         description = "This is a window that is updated with the latest events based on a unique key parameter."
                 + " When a new event arrives with the same value for the unique key parameter"
                 + " as the existing event, the existing event expires, "
-                + "and is replaced by the latest one.",
+                + "and is replaced with the latest one.",
 
         parameters = {
                 @Parameter(name = "unique.key",
@@ -95,7 +95,6 @@ import static java.util.Collections.singletonMap;
                                 + "which have been expired"
                                 + " as a result of being replaced by a newer event"
                                 + " are directed to the 'uniqueIps' output stream."
-
                 )
         }
 )
