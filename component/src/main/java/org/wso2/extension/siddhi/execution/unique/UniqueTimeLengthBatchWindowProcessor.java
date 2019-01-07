@@ -56,12 +56,12 @@ import java.util.Map;
 @Extension(
         name = "timeLengthBatch",
         namespace = "unique",
-        description = "This is a batch (tumbling) time length window that is updated "
-                + "with the latest events based on a unique key parameter. The window will tumble "
-                + "upon elapse of the time window or when length number of unique events have arrived."
-                + " If a new event that arrives within the window period "
-                + "has a value for the key parameter which matches that of an existing event, "
-                + "the existing event expires and it is replaced by the later event. ",
+        description = "This is a batch or tumbling time length window that is updated "
+                + "with the latest events based on a unique key parameter. The window tumbles "
+                + "upon the elapse of the time window, or when a number of unique events have arrived."
+                + " If a new event that arrives within the period of the window "
+                + "has a value for the key parameter which matches the value of an existing event, "
+                + "the existing event expires and it is replaced by the new event. ",
         parameters = {
                 @Parameter(name = "unique.key",
                         description = "The attribute that should be checked for uniqueness.",
@@ -69,7 +69,7 @@ import java.util.Map;
                                 DataType.BOOL, DataType.DOUBLE}),
 
                 @Parameter(name = "window.time",
-                        description = "The sliding time period for which the window should hold events.",
+                        description = "The sliding time period for which the window should hold the events.",
                         type = {DataType.INT, DataType.LONG}),
 
                 @Parameter(name = "start.time",
@@ -90,9 +90,9 @@ import java.util.Map;
                                 "select symbol, price, volume\n" +
                                 "insert all events into OutputStream ;",
 
-                        description = "This window holds the latest unique events that arrive from the CseEventStream"
-                                + " at a given time, and returns all evens to the OutputStream stream. "
-                                + "It is updated every second based on the latest values for the symbol attribute."
+                        description = "This window holds the latest unique events that arrive from the 'CseEventStream'"
+                                + " at a given time, and returns all the events to the 'OutputStream' stream. "
+                                + "It is updated every second based on the latest values for the 'symbol' attribute."
                 )
         }
 )
