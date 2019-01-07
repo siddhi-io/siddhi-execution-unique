@@ -34,9 +34,9 @@ import java.util.Map;
 @Extension(
         name = "firstTimeBatch",
         namespace = "unique",
-        description = "A batch (tumbling) time window that holds first unique events"
-                + " according to the unique key parameter that have arrived during window time period"
-                + " and gets updated for each window time period."
+        description = "A batch-time or tumbling window that holds the unique events"
+                + " according to the unique key parameters that have arrived within the time period of that window"
+                + " and gets updated for each such time window."
                 + " When a new event arrives with a key which is already in the window,"
                 + " that event is not processed by the window.",
         parameters = {
@@ -50,7 +50,7 @@ import java.util.Map;
                 @Parameter(name = "start.time",
                         description = "This specifies an offset in milliseconds in order to start the " +
                                 "window at a time different to the standard time.",
-                        defaultValue = "Timestamp of first event",
+                        defaultValue = "Timestamp of the first event.",
                         type = {DataType.INT, DataType.LONG},
                         optional = true)
         },
@@ -61,9 +61,9 @@ import java.util.Map;
                                 "select symbol, price, volume\n" +
                                 "insert all events into OutputStream ;",
 
-                        description = "This will hold first unique events arrived from the cseEventStream"
-                                + " in every second based on the symbol" +
-                                "as a batch and out put all events to outputStream "
+                        description = "This holds the first unique events that arrive from the 'cseEventStream' " +
+                                "input stream during each second, based on the symbol," +
+                                "as a batch, and returns all the events to the 'OutputStream'. "
                 )
         }
 )
