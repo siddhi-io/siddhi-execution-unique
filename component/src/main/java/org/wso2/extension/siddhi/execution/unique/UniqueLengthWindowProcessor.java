@@ -53,10 +53,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Extension(
         name = "length",
         namespace = "unique",
-        description = "This is a sliding length window that holds the latest window length unique events"
-                + " according to the unique key parameter and gets updated for each event arrival and expiry."
+        description = "This is a sliding length window that holds the events of the latest window length " +
+                "with the unique key" +
+                + " and gets updated for the expiry and arrival of each event."
                 + " When a new event arrives with the key that is already there in the window, "
-                + "then the previous event is expired and new event is kept within the window.",
+                + "then the previous event expires and new event is kept within the window.",
         parameters = {
                 @Parameter(name = "unique.key",
                         description = "The attribute that should be checked for uniqueness.",
@@ -75,11 +76,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
                 description = "In this configuration, the window holds the latest 10 unique events."
                         + " The latest events are selected based on the symbol attribute. "
-                        + "When the CseEventStream receives an event of which the value for the symbol attribute "
+                        + "If the 'CseEventStream' receives an event for which the value for the symbol attribute "
                         + "is the same as that of an existing event in the window,"
                         + " the existing event is replaced by the new event. "
-                        + "All the events are returned to the OutputStream event stream "
-                        + "once an event is expired or added to the window."
+                        + "All the events are returned to the 'OutputStream' event stream "
+                        + "once an event expires or is added to the window."
         )
 )
 
