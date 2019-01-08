@@ -57,10 +57,10 @@ import java.util.Map;
                                 "select symbol, price, volume\n" +
                                 "insert all events into OutputStream ;",
                         description = "The window in this configuration holds the first unique events"
-                                + " from the CseEventStream steam every second, and"
-                                + " outputs them all into the the OutputStream stream."
+                                + " from the 'CseEventStream' stream every second, and"
+                                + " outputs them all into the the 'OutputStream' stream."
                                 + " All the events in a window during a given second should"
-                                + " have a unique value for the symbol attribute."
+                                + " have a unique value for the 'symbol' attribute."
                 )
         }
 )

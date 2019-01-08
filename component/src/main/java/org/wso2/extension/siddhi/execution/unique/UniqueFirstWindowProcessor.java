@@ -55,16 +55,16 @@ import static java.util.Collections.singletonMap;
 @Extension(
         name = "first",
         namespace = "unique",
-        description = "This is a window that holds only the first unique events"
-                + " that are unique according to the unique key parameter."
+        description = "This is a window that holds only the first set of unique events"
+                + " according to the unique key parameter."
                 + " When a new event arrives with a key that is already in the window,"
                 + " that event is not processed by the window.",
 
         parameters = {
                 @Parameter(name = "unique.key",
                         description = "The attribute that should be checked for uniqueness."
-                                + " If there are more than one parameter to check for uniqueness,"
-                                + " it can be specified as an array by comma separation",
+                                + " If there is more than one parameter to check for uniqueness,"
+                                + " it can be specified as an array separated by commas.",
                         type = {DataType.INT, DataType.LONG, DataType.FLOAT,
                                 DataType.BOOL, DataType.DOUBLE}),
         },
@@ -74,9 +74,10 @@ import static java.util.Collections.singletonMap;
                                 "from LoginEvents#window.unique:first(ip)\n" +
                                 "insert into UniqueIps ;",
 
-                        description = "This returns the first unique items that arrive from the LoginEvents stream,"
-                                + " and inserts them into the UniqueIps stream."
-                                + " The unique events those with a unique value for the ip attribute."
+                        description = "This returns the first set of unique items that arrive from the " +
+                                "'LoginEvents' stream,"
+                                + " and returns them to the 'UniqueIps' stream."
+                                + " The unique events are only those with a unique value for the 'ip' attribute."
 
                 )
         }

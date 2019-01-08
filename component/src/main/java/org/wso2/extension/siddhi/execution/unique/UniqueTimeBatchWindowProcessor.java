@@ -58,9 +58,9 @@ import java.util.Map;
         namespace = "unique",
         description = "This is a batch (tumbling) time window that is updated "
                 + "with the latest events based on a unique key parameter."
-                + " If a new event that arrives within the window time period "
+                + " If a new event that arrives within the time period of a window"
                 + "has a value for the key parameter which matches that of an existing event, "
-                + "the existing event expires and it is replaced by the later event. ",
+                + "the existing event expires and it is replaced by the latest event. ",
         parameters = {
                 @Parameter(name = "unique.key",
                         description = "The attribute that should be checked for uniqueness.",
@@ -85,9 +85,9 @@ import java.util.Map;
                                 "select symbol, price, volume\n" +
                                 "insert all events into OutputStream ;",
 
-                        description = "This window holds the latest unique events that arrive from the CseEventStream"
-                                + " at a given time, and returns all evens to the OutputStream stream. "
-                                + "It is updated every second based on the latest values for the symbol attribute."
+                        description = "This window holds the latest unique events that arrive from the 'CseEventStream'"
+                                + " at a given time, and returns all the events to the 'OutputStream' stream. "
+                                + "It is updated every second based on the latest values for the 'symbol' attribute."
                 )
         }
 )

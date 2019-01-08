@@ -58,12 +58,12 @@ import java.util.concurrent.ConcurrentMap;
         name = "time",
         namespace = "unique",
         description = "This is a sliding time window that holds the latest unique events"
-                + " that arrived during the last window time period. The unique events are determined"
+                + " that arrived during the previous time window. The unique events are determined"
                 + " based on the value for a specified unique key parameter."
-                + " The window is updated with each event arrival and expiry."
+                + " The window is updated with the arrival and expiry of each event."
                 + " When a new event that arrives within a window time period"
                 + " has the same value for the unique key parameter as an existing event in the window,"
-                + " the previous event is replaced by the later event.",
+                + " the previous event is replaced by the new event.",
 
         parameters = {
                 @Parameter(name = "unique.key",
@@ -82,10 +82,10 @@ import java.util.concurrent.ConcurrentMap;
                                 "insert expired events into OutputStream ;",
 
                         description = "In this query, the window holds the latest unique events"
-                                + " that arrived within the last second from the CseEventStream,"
-                                + " and returns the expired events to the OutputStream stream."
+                                + " that arrived within the last second from the 'CseEventStream',"
+                                + " and returns the expired events to the 'OutputStream' stream."
                                 + " During any given second, each event in the window should have"
-                                + " a unique value for the symbol attribute. If a new event that arrives"
+                                + " a unique value for the 'symbol' attribute. If a new event that arrives"
                                 + " within the same second has the same value for the symbol attribute"
                                 + " as an existing event in the window, the existing event expires."
                 )
