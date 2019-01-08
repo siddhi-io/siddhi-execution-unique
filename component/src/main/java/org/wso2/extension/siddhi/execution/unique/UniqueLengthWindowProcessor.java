@@ -53,8 +53,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Extension(
         name = "length",
         namespace = "unique",
-        description = "This is a sliding length window that holds the events of the latest window length " +
-                "with the unique key" +
+        description = "This is a sliding length window that holds the events of the latest window length "
+                + "with the unique key"
                 + " and gets updated for the expiry and arrival of each event."
                 + " When a new event arrives with the key that is already there in the window, "
                 + "then the previous event expires and new event is kept within the window.",
