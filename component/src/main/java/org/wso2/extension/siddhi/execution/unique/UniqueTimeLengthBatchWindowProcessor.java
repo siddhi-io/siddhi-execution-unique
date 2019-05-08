@@ -17,33 +17,40 @@
  */
 package org.wso2.extension.siddhi.execution.unique;
 
-import org.wso2.siddhi.annotation.Example;
-import org.wso2.siddhi.annotation.Extension;
-import org.wso2.siddhi.annotation.Parameter;
-import org.wso2.siddhi.annotation.util.DataType;
-import org.wso2.siddhi.core.config.SiddhiAppContext;
-import org.wso2.siddhi.core.event.ComplexEvent;
-import org.wso2.siddhi.core.event.ComplexEventChunk;
-import org.wso2.siddhi.core.event.state.StateEvent;
-import org.wso2.siddhi.core.event.stream.StreamEvent;
-import org.wso2.siddhi.core.event.stream.StreamEventCloner;
-import org.wso2.siddhi.core.executor.ConstantExpressionExecutor;
-import org.wso2.siddhi.core.executor.ExpressionExecutor;
-import org.wso2.siddhi.core.executor.VariableExpressionExecutor;
-import org.wso2.siddhi.core.query.processor.Processor;
-import org.wso2.siddhi.core.query.processor.SchedulingProcessor;
-import org.wso2.siddhi.core.query.processor.stream.window.FindableProcessor;
-import org.wso2.siddhi.core.query.processor.stream.window.WindowProcessor;
-import org.wso2.siddhi.core.table.Table;
-import org.wso2.siddhi.core.util.Scheduler;
-import org.wso2.siddhi.core.util.collection.operator.CompiledCondition;
-import org.wso2.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
-import org.wso2.siddhi.core.util.collection.operator.Operator;
-import org.wso2.siddhi.core.util.config.ConfigReader;
-import org.wso2.siddhi.core.util.parser.OperatorParser;
-import org.wso2.siddhi.query.api.definition.Attribute;
-import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
-import org.wso2.siddhi.query.api.expression.Expression;
+import io.siddhi.annotation.Example;
+import io.siddhi.annotation.Extension;
+import io.siddhi.annotation.Parameter;
+import io.siddhi.annotation.util.DataType;
+import io.siddhi.core.config.SiddhiQueryContext;
+import io.siddhi.core.event.ComplexEvent;
+import io.siddhi.core.event.ComplexEventChunk;
+import io.siddhi.core.event.state.StateEvent;
+import io.siddhi.core.event.stream.MetaStreamEvent;
+import io.siddhi.core.event.stream.StreamEvent;
+import io.siddhi.core.event.stream.StreamEventCloner;
+import io.siddhi.core.event.stream.holder.StreamEventClonerHolder;
+import io.siddhi.core.event.stream.populater.ComplexEventPopulater;
+import io.siddhi.core.executor.ConstantExpressionExecutor;
+import io.siddhi.core.executor.ExpressionExecutor;
+import io.siddhi.core.executor.VariableExpressionExecutor;
+import io.siddhi.core.query.processor.ProcessingMode;
+import io.siddhi.core.query.processor.Processor;
+import io.siddhi.core.query.processor.SchedulingProcessor;
+import io.siddhi.core.query.processor.stream.window.FindableProcessor;
+import io.siddhi.core.query.processor.stream.window.WindowProcessor;
+import io.siddhi.core.table.Table;
+import io.siddhi.core.util.Scheduler;
+import io.siddhi.core.util.collection.operator.CompiledCondition;
+import io.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
+import io.siddhi.core.util.collection.operator.Operator;
+import io.siddhi.core.util.config.ConfigReader;
+import io.siddhi.core.util.parser.OperatorParser;
+import io.siddhi.core.util.snapshot.state.State;
+import io.siddhi.core.util.snapshot.state.StateFactory;
+import io.siddhi.query.api.definition.AbstractDefinition;
+import io.siddhi.query.api.definition.Attribute;
+import io.siddhi.query.api.exception.SiddhiAppValidationException;
+import io.siddhi.query.api.expression.Expression;
 
 import java.util.HashMap;
 import java.util.List;
@@ -97,27 +104,28 @@ import java.util.Map;
         }
 )
 
-public class UniqueTimeLengthBatchWindowProcessor extends WindowProcessor implements SchedulingProcessor,
+public class UniqueTimeLengthBatchWindowProcessor
+        extends WindowProcessor<UniqueTimeLengthBatchWindowProcessor.ExtensionState> implements SchedulingProcessor,
         FindableProcessor {
 
     private long timeInMilliSeconds;
     private long length;
     private long nextEmitTime = -1;
-    private ComplexEventChunk<StreamEvent> currentEventChunk = new ComplexEventChunk<>(false);
     private ComplexEventChunk<StreamEvent> eventsToBeExpired = null;
     private Map<Object, StreamEvent> uniqueEventMap = new HashMap<>();
-    private StreamEvent resetEvent = null;
     private Scheduler scheduler;
-    private SiddhiAppContext siddhiAppContext;
     private boolean isStartTimeEnabled = false;
     private long startTime = 0;
     private ExpressionExecutor uniqueKeyExpressionExecutor;
     private boolean eventSent = false;
 
     @Override
-    protected void init(ExpressionExecutor[] attributeExpressionExecutors, ConfigReader configReader,
-                        boolean outputExpectsExpiredEvents, SiddhiAppContext siddhiAppContext) {
-        this.siddhiAppContext = siddhiAppContext;
+    protected StateFactory<ExtensionState> init(MetaStreamEvent metaStreamEvent, AbstractDefinition inputDefinition,
+                                                ExpressionExecutor[] attributeExpressionExecutors,
+                                                ConfigReader configReader,
+                                                StreamEventClonerHolder streamEventClonerHolder,
+                                                boolean outputExpectsExpiredEvents, boolean findToBeExecuted,
+                                                SiddhiQueryContext siddhiQueryContext) {
         this.eventsToBeExpired = new ComplexEventChunk<>(false);
         if (attributeExpressionExecutors.length == 3) {
             this.uniqueKeyExpressionExecutor = attributeExpressionExecutors[0];
@@ -217,13 +225,15 @@ public class UniqueTimeLengthBatchWindowProcessor extends WindowProcessor implem
                     "Unique Time Length Batch window should " + "only have three or four parameters. " + "but found "
                             + attributeExpressionExecutors.length + " input attributes");
         }
+        return () -> new ExtensionState();
     }
 
     @Override
-    protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
-                           StreamEventCloner streamEventCloner) {
+    protected void processEventChunk(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
+                                     StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater,
+                                     ExtensionState state) {
         synchronized (this) {
-            long currentTime = siddhiAppContext.getTimestampGenerator().currentTime();
+            long currentTime = siddhiQueryContext.getSiddhiAppContext().getTimestampGenerator().currentTime();
             if (nextEmitTime == -1) {
                 if (isStartTimeEnabled) {
                     nextEmitTime = getNextEmitTime(currentTime);
@@ -266,7 +276,7 @@ public class UniqueTimeLengthBatchWindowProcessor extends WindowProcessor implem
             }
             streamEventChunk.clear();
             if (sendEventsByTime || sendEventsByLength) {
-                sendEvents(streamEventChunk, streamEventCloner, currentTime);
+                sendEvents(streamEventChunk, streamEventCloner, currentTime, state);
             }
             if (sendEventsByLength) {
                 eventSent = true; // making events to skip till next time batch
@@ -280,10 +290,10 @@ public class UniqueTimeLengthBatchWindowProcessor extends WindowProcessor implem
     }
 
     private void sendEvents(ComplexEventChunk<StreamEvent> streamEventChunk, StreamEventCloner streamEventCloner,
-                            long currentTime) {
+                            long currentTime, ExtensionState state) {
         for (StreamEvent event : uniqueEventMap.values()) {
             event.setTimestamp(currentTime);
-            currentEventChunk.add(event);
+            state.currentEventChunk.add(event);
         }
         uniqueEventMap.clear();
         if (eventsToBeExpired.getFirst() != null) {
@@ -294,23 +304,23 @@ public class UniqueTimeLengthBatchWindowProcessor extends WindowProcessor implem
             streamEventChunk.add(eventsToBeExpired.getFirst());
         }
         eventsToBeExpired.clear();
-        if (currentEventChunk.getFirst() != null) {
+        if (state.currentEventChunk.getFirst() != null) {
             // add reset event in front of current events
-            streamEventChunk.add(resetEvent);
-            currentEventChunk.reset();
-            while (currentEventChunk.hasNext()) {
-                StreamEvent streamEvent = currentEventChunk.next();
+            streamEventChunk.add(state.resetEvent);
+            state.currentEventChunk.reset();
+            while (state.currentEventChunk.hasNext()) {
+                StreamEvent streamEvent = state.currentEventChunk.next();
                 StreamEvent eventClonedForMap = streamEventCloner.copyStreamEvent(streamEvent);
                 eventClonedForMap.setType(StreamEvent.Type.EXPIRED);
                 this.eventsToBeExpired.add(eventClonedForMap);
             }
-            if (currentEventChunk.getFirst() != null) {
-                resetEvent = streamEventCloner.copyStreamEvent(currentEventChunk.getFirst());
-                resetEvent.setType(ComplexEvent.Type.RESET);
-                streamEventChunk.add(currentEventChunk.getFirst());
+            if (state.currentEventChunk.getFirst() != null) {
+                state.resetEvent = streamEventCloner.copyStreamEvent(state.currentEventChunk.getFirst());
+                state.resetEvent.setType(ComplexEvent.Type.RESET);
+                streamEventChunk.add(state.currentEventChunk.getFirst());
             }
         }
-        currentEventChunk.clear();
+        state.currentEventChunk.clear();
     }
 
 
@@ -352,53 +362,67 @@ public class UniqueTimeLengthBatchWindowProcessor extends WindowProcessor implem
     }
 
     @Override
-    public Map<String, Object> currentState() {
-        if (eventsToBeExpired != null) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("currentEventChunk", currentEventChunk.getFirst());
-            map.put("eventsToBeExpired", eventsToBeExpired.getFirst());
-            map.put("resetEvent", resetEvent);
-            return map;
-        } else {
-            Map<String, Object> map = new HashMap<>();
-            map.put("currentEventChunk", currentEventChunk.getFirst());
-            map.put("resetEvent", resetEvent);
-            return map;
-        }
+    public ProcessingMode getProcessingMode() {
+        return ProcessingMode.BATCH;
     }
 
-    @Override
-    public void restoreState(Map<String, Object> map) {
-        if (map.size() > 2) {
-            currentEventChunk.clear();
-            currentEventChunk.add((StreamEvent) map.get("currentEventChunk"));
-            eventsToBeExpired.clear();
-            eventsToBeExpired.add((StreamEvent) map.get("eventsToBeExpired"));
-            resetEvent = (StreamEvent) map.get("resetEvent");
-        } else {
-            currentEventChunk.clear();
-            currentEventChunk.add((StreamEvent) map.get("currentEventChunk"));
-            resetEvent = (StreamEvent) map.get("resetEvent");
+    class ExtensionState extends State {
+
+        private ComplexEventChunk<StreamEvent> currentEventChunk = new ComplexEventChunk<>(false);
+        private StreamEvent resetEvent = null;
+
+        @Override
+        public boolean canDestroy() {
+            return false;
+        }
+
+        @Override
+        public Map<String, Object> snapshot() {
+            if (eventsToBeExpired != null) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("currentEventChunk", currentEventChunk.getFirst());
+                map.put("eventsToBeExpired", eventsToBeExpired.getFirst());
+                map.put("resetEvent", resetEvent);
+                return map;
+            } else {
+                Map<String, Object> map = new HashMap<>();
+                map.put("currentEventChunk", currentEventChunk.getFirst());
+                map.put("resetEvent", resetEvent);
+                return map;
+            }
+        }
+
+        @Override
+        public void restore(Map<String, Object> map) {
+            if (map.size() > 2) {
+                currentEventChunk.clear();
+                currentEventChunk.add((StreamEvent) map.get("currentEventChunk"));
+                eventsToBeExpired.clear();
+                eventsToBeExpired.add((StreamEvent) map.get("eventsToBeExpired"));
+                resetEvent = (StreamEvent) map.get("resetEvent");
+            } else {
+                currentEventChunk.clear();
+                currentEventChunk.add((StreamEvent) map.get("currentEventChunk"));
+                resetEvent = (StreamEvent) map.get("resetEvent");
+            }
         }
     }
 
     @Override
     public StreamEvent find(StateEvent matchingEvent, CompiledCondition compiledCondition) {
         if (compiledCondition instanceof Operator) {
-            return ((Operator) compiledCondition).find(matchingEvent, eventsToBeExpired, streamEventCloner);
+            return ((Operator) compiledCondition).find(matchingEvent, eventsToBeExpired,
+                    streamEventClonerHolder.getStreamEventCloner());
         } else {
             return null;
         }
     }
 
     @Override
-    public CompiledCondition compileCondition(Expression expression,
-                                              MatchingMetaInfoHolder matchingMetaInfoHolder,
-                                              SiddhiAppContext siddhiAppContext,
-                                              List<VariableExpressionExecutor> list, Map<String, Table> map,
-                                              String queryName) {
-        return OperatorParser
-                .constructOperator(eventsToBeExpired, expression, matchingMetaInfoHolder, siddhiAppContext, list, map,
-                        queryName);
+    public CompiledCondition compileCondition(Expression expression, MatchingMetaInfoHolder matchingMetaInfoHolder,
+                                              List<VariableExpressionExecutor> variableExpressionExecutors,
+                                              Map<String, Table> tableMap, SiddhiQueryContext siddhiQueryContext) {
+        return OperatorParser.constructOperator(eventsToBeExpired, expression, matchingMetaInfoHolder,
+                variableExpressionExecutors, tableMap, siddhiQueryContext);
     }
 }

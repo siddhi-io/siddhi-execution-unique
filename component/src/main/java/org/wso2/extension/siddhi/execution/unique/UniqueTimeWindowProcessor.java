@@ -17,32 +17,39 @@
  */
 package org.wso2.extension.siddhi.execution.unique;
 
-import org.wso2.siddhi.annotation.Example;
-import org.wso2.siddhi.annotation.Extension;
-import org.wso2.siddhi.annotation.Parameter;
-import org.wso2.siddhi.annotation.util.DataType;
-import org.wso2.siddhi.core.config.SiddhiAppContext;
-import org.wso2.siddhi.core.event.ComplexEventChunk;
-import org.wso2.siddhi.core.event.state.StateEvent;
-import org.wso2.siddhi.core.event.stream.StreamEvent;
-import org.wso2.siddhi.core.event.stream.StreamEventCloner;
-import org.wso2.siddhi.core.executor.ConstantExpressionExecutor;
-import org.wso2.siddhi.core.executor.ExpressionExecutor;
-import org.wso2.siddhi.core.executor.VariableExpressionExecutor;
-import org.wso2.siddhi.core.query.processor.Processor;
-import org.wso2.siddhi.core.query.processor.SchedulingProcessor;
-import org.wso2.siddhi.core.query.processor.stream.window.FindableProcessor;
-import org.wso2.siddhi.core.query.processor.stream.window.WindowProcessor;
-import org.wso2.siddhi.core.table.Table;
-import org.wso2.siddhi.core.util.Scheduler;
-import org.wso2.siddhi.core.util.collection.operator.CompiledCondition;
-import org.wso2.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
-import org.wso2.siddhi.core.util.collection.operator.Operator;
-import org.wso2.siddhi.core.util.config.ConfigReader;
-import org.wso2.siddhi.core.util.parser.OperatorParser;
-import org.wso2.siddhi.query.api.definition.Attribute;
-import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
-import org.wso2.siddhi.query.api.expression.Expression;
+import io.siddhi.annotation.Example;
+import io.siddhi.annotation.Extension;
+import io.siddhi.annotation.Parameter;
+import io.siddhi.annotation.util.DataType;
+import io.siddhi.core.config.SiddhiQueryContext;
+import io.siddhi.core.event.ComplexEventChunk;
+import io.siddhi.core.event.state.StateEvent;
+import io.siddhi.core.event.stream.MetaStreamEvent;
+import io.siddhi.core.event.stream.StreamEvent;
+import io.siddhi.core.event.stream.StreamEventCloner;
+import io.siddhi.core.event.stream.holder.StreamEventClonerHolder;
+import io.siddhi.core.event.stream.populater.ComplexEventPopulater;
+import io.siddhi.core.executor.ConstantExpressionExecutor;
+import io.siddhi.core.executor.ExpressionExecutor;
+import io.siddhi.core.executor.VariableExpressionExecutor;
+import io.siddhi.core.query.processor.ProcessingMode;
+import io.siddhi.core.query.processor.Processor;
+import io.siddhi.core.query.processor.SchedulingProcessor;
+import io.siddhi.core.query.processor.stream.window.FindableProcessor;
+import io.siddhi.core.query.processor.stream.window.WindowProcessor;
+import io.siddhi.core.table.Table;
+import io.siddhi.core.util.Scheduler;
+import io.siddhi.core.util.collection.operator.CompiledCondition;
+import io.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
+import io.siddhi.core.util.collection.operator.Operator;
+import io.siddhi.core.util.config.ConfigReader;
+import io.siddhi.core.util.parser.OperatorParser;
+import io.siddhi.core.util.snapshot.state.State;
+import io.siddhi.core.util.snapshot.state.StateFactory;
+import io.siddhi.query.api.definition.AbstractDefinition;
+import io.siddhi.query.api.definition.Attribute;
+import io.siddhi.query.api.exception.SiddhiAppValidationException;
+import io.siddhi.query.api.expression.Expression;
 
 import java.util.HashMap;
 import java.util.List;
@@ -92,13 +99,12 @@ import java.util.concurrent.ConcurrentMap;
         }
 )
 
-public class UniqueTimeWindowProcessor extends WindowProcessor implements SchedulingProcessor, FindableProcessor {
+public class UniqueTimeWindowProcessor extends WindowProcessor<UniqueTimeWindowProcessor.ExtensionState>
+        implements SchedulingProcessor, FindableProcessor {
 
-    private ConcurrentMap<String, StreamEvent> map = new ConcurrentHashMap<String, StreamEvent>();
     private long timeInMilliSeconds;
     private ComplexEventChunk<StreamEvent> expiredEventChunk;
     private Scheduler scheduler;
-    private SiddhiAppContext siddhiAppContext;
     private volatile long lastTimestamp = Long.MIN_VALUE;
     private ExpressionExecutor uniqueKeyExpressionExecutor;
 
@@ -114,9 +120,12 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
     }
 
     @Override
-    protected void init(ExpressionExecutor[] attributeExpressionExecutors, ConfigReader configReader,
-                        boolean outputExpectsExpiredEvents, SiddhiAppContext siddhiAppContext) {
-        this.siddhiAppContext = siddhiAppContext;
+    protected StateFactory<ExtensionState> init(MetaStreamEvent metaStreamEvent, AbstractDefinition inputDefinition,
+                                                ExpressionExecutor[] attributeExpressionExecutors,
+                                                ConfigReader configReader,
+                                                StreamEventClonerHolder streamEventClonerHolder,
+                                                boolean outputExpectsExpiredEvents, boolean findToBeExecuted,
+                                                SiddhiQueryContext siddhiQueryContext) {
         this.expiredEventChunk = new ComplexEventChunk<StreamEvent>(false);
         if (attributeExpressionExecutors.length == 2) {
             uniqueKeyExpressionExecutor = attributeExpressionExecutors[0];
@@ -143,22 +152,24 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
                     + "(<string|int|bool|long|double|float> unique attribute, <int|long|time> windowTime), but found "
                     + attributeExpressionExecutors.length + " input attributes");
         }
+        return () -> new ExtensionState();
     }
 
     @Override
-    protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
-                           StreamEventCloner streamEventCloner) {
+    protected void processEventChunk(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
+                                     StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater,
+                                     ExtensionState state) {
         synchronized (this) {
             while (streamEventChunk.hasNext()) {
                 StreamEvent streamEvent = streamEventChunk.next();
-                long currentTime = siddhiAppContext.getTimestampGenerator().currentTime();
+                long currentTime = siddhiQueryContext.getSiddhiAppContext().getTimestampGenerator().currentTime();
                 StreamEvent oldEvent = null;
                 if (streamEvent.getType() == StreamEvent.Type.CURRENT) {
                     StreamEvent clonedEvent = streamEventCloner.copyStreamEvent(streamEvent);
                     clonedEvent.setType(StreamEvent.Type.EXPIRED);
                     StreamEvent eventClonedForMap = streamEventCloner.copyStreamEvent(streamEvent);
                     eventClonedForMap.setType(StreamEvent.Type.EXPIRED);
-                    oldEvent = map.put(generateKey(eventClonedForMap), eventClonedForMap);
+                    oldEvent = state.map.put(generateKey(eventClonedForMap), eventClonedForMap);
                     this.expiredEventChunk.add(clonedEvent);
                     if (lastTimestamp < clonedEvent.getTimestamp()) {
                         if (scheduler != null) {
@@ -202,21 +213,19 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
     @Override
     public synchronized StreamEvent find(StateEvent matchingEvent, CompiledCondition compiledCondition) {
         if (compiledCondition instanceof Operator) {
-            return ((Operator) compiledCondition).find(matchingEvent, expiredEventChunk, streamEventCloner);
+            return ((Operator) compiledCondition).find(matchingEvent, expiredEventChunk,
+                    streamEventClonerHolder.getStreamEventCloner());
         } else {
             return null;
         }
     }
 
     @Override
-    public CompiledCondition compileCondition(Expression expression,
-                                              MatchingMetaInfoHolder matchingMetaInfoHolder,
-                                              SiddhiAppContext siddhiAppContext,
+    public CompiledCondition compileCondition(Expression expression, MatchingMetaInfoHolder matchingMetaInfoHolder,
                                               List<VariableExpressionExecutor> variableExpressionExecutors,
-                                              Map<String, Table> tableMap,
-                                              String queryName) {
-        return OperatorParser.constructOperator(expiredEventChunk, expression, matchingMetaInfoHolder, siddhiAppContext,
-                variableExpressionExecutors, tableMap, this.queryName);
+                                              Map<String, Table> tableMap, SiddhiQueryContext siddhiQueryContext) {
+        return OperatorParser.constructOperator(expiredEventChunk, expression, matchingMetaInfoHolder,
+                variableExpressionExecutors, tableMap, siddhiQueryContext);
     }
 
     @Override
@@ -230,18 +239,33 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
     }
 
     @Override
-    public Map<String, Object> currentState() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("expiredEventchunck", expiredEventChunk.getFirst());
-        map.put("map", this.map);
-        return map;
+    public ProcessingMode getProcessingMode() {
+        return ProcessingMode.BATCH;
     }
 
-    @Override
-    public void restoreState(Map<String, Object> map) {
-        expiredEventChunk.clear();
-        expiredEventChunk.add((StreamEvent) map.get("expiredEventchunck"));
-        this.map = (ConcurrentMap) map.get("map");
+    class ExtensionState extends State {
+
+        private ConcurrentMap<String, StreamEvent> map = new ConcurrentHashMap<String, StreamEvent>();
+
+        @Override
+        public boolean canDestroy() {
+            return false;
+        }
+
+        @Override
+        public Map<String, Object> snapshot() {
+            Map<String, Object> map = new HashMap<>();
+            map.put("expiredEventchunck", expiredEventChunk.getFirst());
+            map.put("map", this.map);
+            return map;
+        }
+
+        @Override
+        public void restore(Map<String, Object> state) {
+            expiredEventChunk.clear();
+            expiredEventChunk.add((StreamEvent) map.get("expiredEventchunck"));
+            this.map = (ConcurrentMap<String, StreamEvent>) state.get("map");
+        }
     }
 
     /**

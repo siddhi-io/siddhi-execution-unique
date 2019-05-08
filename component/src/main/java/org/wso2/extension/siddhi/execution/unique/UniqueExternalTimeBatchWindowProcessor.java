@@ -18,33 +18,40 @@
 
 package org.wso2.extension.siddhi.execution.unique;
 
-import org.wso2.siddhi.annotation.Example;
-import org.wso2.siddhi.annotation.Extension;
-import org.wso2.siddhi.annotation.Parameter;
-import org.wso2.siddhi.annotation.util.DataType;
-import org.wso2.siddhi.core.config.SiddhiAppContext;
-import org.wso2.siddhi.core.event.ComplexEvent;
-import org.wso2.siddhi.core.event.ComplexEventChunk;
-import org.wso2.siddhi.core.event.state.StateEvent;
-import org.wso2.siddhi.core.event.stream.StreamEvent;
-import org.wso2.siddhi.core.event.stream.StreamEventCloner;
-import org.wso2.siddhi.core.executor.ConstantExpressionExecutor;
-import org.wso2.siddhi.core.executor.ExpressionExecutor;
-import org.wso2.siddhi.core.executor.VariableExpressionExecutor;
-import org.wso2.siddhi.core.query.processor.Processor;
-import org.wso2.siddhi.core.query.processor.SchedulingProcessor;
-import org.wso2.siddhi.core.query.processor.stream.window.FindableProcessor;
-import org.wso2.siddhi.core.query.processor.stream.window.WindowProcessor;
-import org.wso2.siddhi.core.table.Table;
-import org.wso2.siddhi.core.util.Scheduler;
-import org.wso2.siddhi.core.util.collection.operator.CompiledCondition;
-import org.wso2.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
-import org.wso2.siddhi.core.util.collection.operator.Operator;
-import org.wso2.siddhi.core.util.config.ConfigReader;
-import org.wso2.siddhi.core.util.parser.OperatorParser;
-import org.wso2.siddhi.query.api.definition.Attribute;
-import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
-import org.wso2.siddhi.query.api.expression.Expression;
+import io.siddhi.annotation.Example;
+import io.siddhi.annotation.Extension;
+import io.siddhi.annotation.Parameter;
+import io.siddhi.annotation.util.DataType;
+import io.siddhi.core.config.SiddhiQueryContext;
+import io.siddhi.core.event.ComplexEvent;
+import io.siddhi.core.event.ComplexEventChunk;
+import io.siddhi.core.event.state.StateEvent;
+import io.siddhi.core.event.stream.MetaStreamEvent;
+import io.siddhi.core.event.stream.StreamEvent;
+import io.siddhi.core.event.stream.StreamEventCloner;
+import io.siddhi.core.event.stream.holder.StreamEventClonerHolder;
+import io.siddhi.core.event.stream.populater.ComplexEventPopulater;
+import io.siddhi.core.executor.ConstantExpressionExecutor;
+import io.siddhi.core.executor.ExpressionExecutor;
+import io.siddhi.core.executor.VariableExpressionExecutor;
+import io.siddhi.core.query.processor.ProcessingMode;
+import io.siddhi.core.query.processor.Processor;
+import io.siddhi.core.query.processor.SchedulingProcessor;
+import io.siddhi.core.query.processor.stream.window.FindableProcessor;
+import io.siddhi.core.query.processor.stream.window.WindowProcessor;
+import io.siddhi.core.table.Table;
+import io.siddhi.core.util.Scheduler;
+import io.siddhi.core.util.collection.operator.CompiledCondition;
+import io.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
+import io.siddhi.core.util.collection.operator.Operator;
+import io.siddhi.core.util.config.ConfigReader;
+import io.siddhi.core.util.parser.OperatorParser;
+import io.siddhi.core.util.snapshot.state.State;
+import io.siddhi.core.util.snapshot.state.StateFactory;
+import io.siddhi.query.api.definition.AbstractDefinition;
+import io.siddhi.query.api.definition.Attribute;
+import io.siddhi.query.api.exception.SiddhiAppValidationException;
+import io.siddhi.query.api.expression.Expression;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -117,29 +124,38 @@ import java.util.Map;
         }
 )
 
-public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
+public class UniqueExternalTimeBatchWindowProcessor
+        extends WindowProcessor<UniqueExternalTimeBatchWindowProcessor.ExtensionState>
         implements SchedulingProcessor, FindableProcessor {
-    private Map<Object, StreamEvent> currentEvents = new LinkedHashMap<Object, StreamEvent>();
+
     private Map<Object, StreamEvent> expiredEvents = null;
-    private volatile StreamEvent resetEvent = null;
+
     private VariableExpressionExecutor timestampExpressionExecutor;
     private long timeToKeep;
-    private long endTime = -1;
     private long startTime = 0;
     private boolean isStartTimeEnabled = false;
     private long schedulerTimeout = 0;
     private Scheduler scheduler;
-    private long lastScheduledTime;
-    private long lastCurrentEventTime;
-    private boolean flushed = false;
     private boolean storeExpiredEvents = false;
     private ExpressionExecutor uniqueExpressionExecutor;
     private boolean replaceTimestampWithBatchEndTime = false;
     private boolean outputExpectsExpiredEvents;
 
-    @Override protected void init(ExpressionExecutor[] attributeExpressionExecutors, ConfigReader configReader,
-            boolean outputExpectsExpiredEvents, SiddhiAppContext siddhiAppContext) {
+    //to be kept inside state class
+    private Map<Object, StreamEvent> currentEvents = new LinkedHashMap<Object, StreamEvent>();
+    private volatile StreamEvent resetEvent = null;
+    private long endTime = -1;
+    private long lastScheduledTime;
+    private long lastCurrentEventTime;
+    private boolean flushed = false;
 
+    @Override
+    protected StateFactory<ExtensionState> init(MetaStreamEvent metaStreamEvent, AbstractDefinition inputDefinition,
+                                                ExpressionExecutor[] attributeExpressionExecutors,
+                                                ConfigReader configReader,
+                                                StreamEventClonerHolder streamEventClonerHolder,
+                                                boolean outputExpectsExpiredEvents, boolean findToBeExecuted,
+                                                SiddhiQueryContext siddhiQueryContext) {
         if (outputExpectsExpiredEvents) {
             this.expiredEvents = new LinkedHashMap<Object, StreamEvent>();
             this.storeExpiredEvents = true;
@@ -223,12 +239,13 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
                 this.expiredEvents = new LinkedHashMap<Object, StreamEvent>();
             }
         }
-
+        return () -> new ExtensionState();
     }
 
-    @Override protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
-            StreamEventCloner streamEventCloner) {
-
+    @Override
+    protected void processEventChunk(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
+                                     StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater,
+                                     ExtensionState state) {
         // event incoming trigger process. No events means no action
         if (streamEventChunk.getFirst() == null) {
             return;
@@ -248,16 +265,19 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
                     if (lastScheduledTime <= currStreamEvent.getTimestamp()) {
                         // implies that there have not been any more events after this schedule has been done.
                         if (!flushed) {
-                            flushToOutputChunk(streamEventCloner, complexEventChunks, lastCurrentEventTime, true);
+                            flushToOutputChunk(streamEventCloner, complexEventChunks,
+                                    lastCurrentEventTime, true);
                             flushed = true;
                         } else {
                             if (currentEvents.size() > 0) {
-                                appendToOutputChunk(streamEventCloner, complexEventChunks, lastCurrentEventTime, true);
+                                appendToOutputChunk(streamEventCloner, complexEventChunks,
+                                        lastCurrentEventTime, true);
                             }
                         }
 
                         // rescheduling to emit the current batch after expiring it if no further events arrive.
-                        lastScheduledTime = siddhiAppContext.getTimestampGenerator().currentTime() + schedulerTimeout;
+                        lastScheduledTime = siddhiQueryContext.getSiddhiAppContext().getTimestampGenerator()
+                                .currentTime() + schedulerTimeout;
                         if (scheduler != null) {
                             scheduler.notifyAt(lastScheduledTime);
                         }
@@ -276,17 +296,20 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
                     cloneAppend(streamEventCloner, currStreamEvent);
                 } else {
                     if (flushed) {
-                        appendToOutputChunk(streamEventCloner, complexEventChunks, lastCurrentEventTime, false);
+                        appendToOutputChunk(streamEventCloner, complexEventChunks,
+                                lastCurrentEventTime, false);
                         flushed = false;
                     } else {
-                        flushToOutputChunk(streamEventCloner, complexEventChunks, lastCurrentEventTime, false);
+                        flushToOutputChunk(streamEventCloner, complexEventChunks,
+                                lastCurrentEventTime, false);
                     }
                     // update timestamp, call next processor
                     endTime = findEndTime(lastCurrentEventTime, startTime, timeToKeep);
                     cloneAppend(streamEventCloner, currStreamEvent);
                     // triggering the last batch expiration.
                     if (schedulerTimeout > 0) {
-                        lastScheduledTime = siddhiAppContext.getTimestampGenerator().currentTime() + schedulerTimeout;
+                        lastScheduledTime = siddhiQueryContext.getSiddhiAppContext().getTimestampGenerator()
+                                .currentTime() + schedulerTimeout;
                         scheduler.notifyAt(lastScheduledTime);
                     }
                 }
@@ -308,7 +331,8 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
                 endTime = startTime + timeToKeep;
             }
             if (schedulerTimeout > 0) {
-                lastScheduledTime = siddhiAppContext.getTimestampGenerator().currentTime() + schedulerTimeout;
+                lastScheduledTime = siddhiQueryContext.getSiddhiAppContext().getTimestampGenerator()
+                        .currentTime() + schedulerTimeout;
                 if (scheduler != null) {
                     scheduler.notifyAt(lastScheduledTime);
                 }
@@ -317,7 +341,8 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
     }
 
     private void flushToOutputChunk(StreamEventCloner streamEventCloner,
-            List<ComplexEventChunk<StreamEvent>> complexEventChunks, long currentTime, boolean preserveCurrentEvents) {
+                                    List<ComplexEventChunk<StreamEvent>> complexEventChunks, long currentTime,
+                                    boolean preserveCurrentEvents) {
 
         ComplexEventChunk<StreamEvent> newEventChunk = new ComplexEventChunk<StreamEvent>(true);
         if (outputExpectsExpiredEvents) {
@@ -361,7 +386,8 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
     }
 
     private void appendToOutputChunk(StreamEventCloner streamEventCloner,
-            List<ComplexEventChunk<StreamEvent>> complexEventChunks, long currentTime, boolean preserveCurrentEvents) {
+                                     List<ComplexEventChunk<StreamEvent>> complexEventChunks, long currentTime,
+                                     boolean preserveCurrentEvents) {
         ComplexEventChunk<StreamEvent> newEventChunk = new ComplexEventChunk<StreamEvent>(true);
         Map<Object, StreamEvent> sentEvents = new LinkedHashMap<Object, StreamEvent>();
 
@@ -435,38 +461,57 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
         //Do nothing
     }
 
-    public synchronized Map<String, Object> currentState() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("currentEvents", currentEvents);
-        map.put("expiredEvents", expiredEvents);
-        map.put("resetEvent", resetEvent);
-        map.put("endTime", endTime);
-        map.put("startTime", startTime);
-        map.put("lastScheduledTime", lastScheduledTime);
-        map.put("lastCurrentEventTime", lastCurrentEventTime);
-        map.put("flushed", flushed);
-
-        return map;
+    @Override
+    public ProcessingMode getProcessingMode() {
+        return ProcessingMode.BATCH;
     }
 
-    public synchronized void restoreState(Map<String, Object> map) {
-        currentEvents = (Map<Object, StreamEvent>) map.get("currentEvents");
-        if (map.get("expiredEvents") != null) {
-            expiredEvents = (Map<Object, StreamEvent>) map.get("expiredEvents");
-        } else {
-            if (outputExpectsExpiredEvents) {
-                this.expiredEvents = new LinkedHashMap<Object, StreamEvent>();
-            }
-            if (schedulerTimeout > 0) {
-                this.expiredEvents = new LinkedHashMap<Object, StreamEvent>();
+    class ExtensionState extends State {
+
+        @Override
+        public boolean canDestroy() {
+            return false;
+        }
+
+        @Override
+        public  Map<String, Object> snapshot() {
+            synchronized (UniqueExternalTimeBatchWindowProcessor.this) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("currentEvents", currentEvents);
+                map.put("expiredEvents", expiredEvents);
+                map.put("resetEvent", resetEvent);
+                map.put("endTime", endTime);
+                map.put("startTime", startTime);
+                map.put("lastScheduledTime", lastScheduledTime);
+                map.put("lastCurrentEventTime", lastCurrentEventTime);
+                map.put("flushed", flushed);
+
+                return map;
             }
         }
-        resetEvent = (StreamEvent) map.get("resetEvent");
-        endTime = (Long) map.get("endTime");
-        startTime = (Long) map.get("startTime");
-        lastScheduledTime = (Long) map.get("lastScheduledTime");
-        lastCurrentEventTime = (Long) map.get("lastCurrentEventTime");
-        flushed = (Boolean) map.get("flushed");
+
+        @Override
+        public void restore(Map<String, Object> map) {
+            synchronized (UniqueExternalTimeBatchWindowProcessor.this) {
+                currentEvents = (Map<Object, StreamEvent>) map.get("currentEvents");
+                if (map.get("expiredEvents") != null) {
+                    expiredEvents = (Map<Object, StreamEvent>) map.get("expiredEvents");
+                } else {
+                    if (outputExpectsExpiredEvents) {
+                        UniqueExternalTimeBatchWindowProcessor.this.expiredEvents = new LinkedHashMap<>();
+                    }
+                    if (schedulerTimeout > 0) {
+                        UniqueExternalTimeBatchWindowProcessor.this.expiredEvents = new LinkedHashMap<>();
+                    }
+                }
+                resetEvent = (StreamEvent) map.get("resetEvent");
+                endTime = (Long) map.get("endTime");
+                startTime = (Long) map.get("startTime");
+                lastScheduledTime = (Long) map.get("lastScheduledTime");
+                lastCurrentEventTime = (Long) map.get("lastCurrentEventTime");
+                flushed = (Boolean) map.get("flushed");
+            }
+        }
     }
 
     @Override public synchronized Scheduler getScheduler() {
@@ -479,20 +524,24 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
 
     @Override public synchronized StreamEvent find(StateEvent matchingEvent, CompiledCondition compiledCondition) {
         if (compiledCondition instanceof Operator) {
-            return ((Operator) compiledCondition).find(matchingEvent, expiredEvents, streamEventCloner);
+            return ((Operator) compiledCondition).find(matchingEvent, expiredEvents,
+                    streamEventClonerHolder.getStreamEventCloner());
         } else {
             return null;
         }
     }
 
-    @Override public synchronized CompiledCondition compileCondition(Expression expression,
-            MatchingMetaInfoHolder matchingMetaInfoHolder, SiddhiAppContext siddhiAppContext,
-            List<VariableExpressionExecutor> variableExpressionExecutors, Map<String, Table> tableMap, String s) {
+    @Override
+    public synchronized CompiledCondition compileCondition(Expression expression,
+                                                           MatchingMetaInfoHolder matchingMetaInfoHolder,
+                                                           List<VariableExpressionExecutor> variableExpressionExecutors,
+                                                           Map<String, Table> tableMap,
+                                                           SiddhiQueryContext siddhiQueryContext) {
         if (expiredEvents == null) {
             expiredEvents = new LinkedHashMap<Object, StreamEvent>();
             storeExpiredEvents = true;
         }
-        return OperatorParser.constructOperator(expiredEvents, expression, matchingMetaInfoHolder, siddhiAppContext,
-                variableExpressionExecutors, tableMap, this.queryName);
+        return OperatorParser.constructOperator(expiredEvents, expression, matchingMetaInfoHolder,
+                variableExpressionExecutors, tableMap, siddhiQueryContext);
     }
 }
