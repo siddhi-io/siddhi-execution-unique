@@ -15,7 +15,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.wso2.extension.siddhi.execution.unique;
+package io.siddhi.extension.execution.unique;
 
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;

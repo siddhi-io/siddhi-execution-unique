@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.wso2.extension.siddhi.execution.unique</groupId>
+        <groupId>io.siddhi.extension.execution.unique</groupId>
         <artifactId>siddhi-execution-unique-parent</artifactId>
         <version>5.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
@@ -126,7 +126,7 @@
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Name>${project.artifactId}</Bundle-Name>
                         <Export-Package>
-                            org.wso2.extension.siddhi.execution.unique,
+                            io.siddhi.extension.execution.unique,
                         </Export-Package>
                         <Import-Package>
                             io.siddhi.core.*;version="${siddhi.version.range}",
