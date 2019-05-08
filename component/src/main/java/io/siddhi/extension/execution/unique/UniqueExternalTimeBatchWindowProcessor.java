@@ -129,7 +129,6 @@ public class UniqueExternalTimeBatchWindowProcessor
         implements SchedulingProcessor, FindableProcessor {
 
     private Map<Object, StreamEvent> expiredEvents = null;
-
     private VariableExpressionExecutor timestampExpressionExecutor;
     private long timeToKeep;
     private long startTime = 0;
@@ -141,7 +140,6 @@ public class UniqueExternalTimeBatchWindowProcessor
     private boolean replaceTimestampWithBatchEndTime = false;
     private boolean outputExpectsExpiredEvents;
 
-    //to be kept inside state class
     private Map<Object, StreamEvent> currentEvents = new LinkedHashMap<Object, StreamEvent>();
     private volatile StreamEvent resetEvent = null;
     private long endTime = -1;
