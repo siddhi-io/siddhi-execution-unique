@@ -23,12 +23,17 @@ import io.siddhi.annotation.Extension;
 import io.siddhi.annotation.Parameter;
 import io.siddhi.annotation.util.DataType;
 import io.siddhi.core.config.SiddhiAppContext;
+import io.siddhi.core.config.SiddhiQueryContext;
 import io.siddhi.core.event.ComplexEventChunk;
 import io.siddhi.core.event.state.StateEvent;
+import io.siddhi.core.event.stream.MetaStreamEvent;
 import io.siddhi.core.event.stream.StreamEvent;
 import io.siddhi.core.event.stream.StreamEventCloner;
+import io.siddhi.core.event.stream.holder.StreamEventClonerHolder;
+import io.siddhi.core.event.stream.populater.ComplexEventPopulater;
 import io.siddhi.core.executor.ExpressionExecutor;
 import io.siddhi.core.executor.VariableExpressionExecutor;
+import io.siddhi.core.query.processor.ProcessingMode;
 import io.siddhi.core.query.processor.Processor;
 import io.siddhi.core.query.processor.stream.window.FindableProcessor;
 import io.siddhi.core.query.processor.stream.window.WindowProcessor;
@@ -38,6 +43,9 @@ import io.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
 import io.siddhi.core.util.collection.operator.Operator;
 import io.siddhi.core.util.config.ConfigReader;
 import io.siddhi.core.util.parser.OperatorParser;
+import io.siddhi.core.util.snapshot.state.State;
+import io.siddhi.core.util.snapshot.state.StateFactory;
+import io.siddhi.query.api.definition.AbstractDefinition;
 import io.siddhi.query.api.expression.Expression;
 
 import java.util.List;
@@ -99,21 +107,33 @@ import static java.util.Collections.singletonMap;
         }
 )
 
-public class UniqueEverWindowProcessor extends WindowProcessor implements FindableProcessor {
-    private ConcurrentMap<String, StreamEvent> map = new ConcurrentHashMap<String, StreamEvent>();
+public class UniqueEverWindowProcessor extends WindowProcessor<UniqueEverWindowProcessor.WindowState>
+        implements FindableProcessor {
     private ExpressionExecutor[] expressionExecutors;
-
+    private SiddhiAppContext siddhiAppContext;
+    private StreamEventCloner streamEventCloner;
 
     @Override
-    protected void init(ExpressionExecutor[] attributeExpressionExecutors, ConfigReader configReader,
-                        boolean b, SiddhiAppContext siddhiAppContext) {
+    protected StateFactory<WindowState> init(MetaStreamEvent metaStreamEvent,
+                                             AbstractDefinition inputDefinition,
+                                             ExpressionExecutor[] attributeExpressionExecutors,
+                                             ConfigReader configReader,
+                                             StreamEventClonerHolder streamEventClonerHolder,
+                                             boolean outputExpectsExpiredEvents,
+                                             boolean findToBeExecuted,
+                                             SiddhiQueryContext siddhiQueryContext) {
         expressionExecutors = attributeExpressionExecutors;
+        siddhiAppContext = siddhiQueryContext.getSiddhiAppContext();
+        return WindowState::new;
     }
 
     @Override
-    protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
-                           StreamEventCloner streamEventCloner) {
-        synchronized (this) {
+    protected void processEventChunk(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
+                                     StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater,
+                                     WindowState state) {
+
+        this.streamEventCloner = streamEventCloner;
+        synchronized (state) {
             long currentTime = siddhiAppContext.getTimestampGenerator().currentTime();
 
             StreamEvent streamEvent = streamEventChunk.getFirst();
@@ -122,7 +142,7 @@ public class UniqueEverWindowProcessor extends WindowProcessor implements Findab
                 StreamEvent clonedEvent = streamEventCloner.copyStreamEvent(streamEvent);
                 clonedEvent.setType(StreamEvent.Type.EXPIRED);
 
-                StreamEvent oldEvent = map.put(generateKey(clonedEvent), clonedEvent);
+                StreamEvent oldEvent = state.map.put(generateKey(clonedEvent), clonedEvent);
                 if (oldEvent != null) {
                     oldEvent.setTimestamp(currentTime);
                     streamEventChunk.add(oldEvent);
@@ -137,10 +157,14 @@ public class UniqueEverWindowProcessor extends WindowProcessor implements Findab
     }
 
     @Override
+    public ProcessingMode getProcessingMode() {
+        return ProcessingMode.BATCH;
+    }
+
+    @Override
     public void start() {
         //Do nothing
     }
-
 
     @Override
     public void stop() {
@@ -148,33 +172,32 @@ public class UniqueEverWindowProcessor extends WindowProcessor implements Findab
     }
 
     @Override
-    public Map<String, Object> currentState() {
-        return singletonMap("map", this.map);
-    }
-
-    @Override
-    public synchronized void restoreState(Map<String, Object> map) {
-        this.map = (ConcurrentMap<String, StreamEvent>) map.get("map");
-    }
-
-    @Override
     public StreamEvent find(StateEvent matchingEvent, CompiledCondition compiledCondition) {
-        if (compiledCondition instanceof Operator) {
-            return ((Operator) compiledCondition).find(matchingEvent, map.values(), streamEventCloner);
-        } else {
-            return null;
+        WindowState state = stateHolder.getState();
+        StreamEvent streamEvent = null;
+        try {
+            if (compiledCondition instanceof Operator) {
+                streamEvent = ((Operator) compiledCondition).find(matchingEvent, state.map.values(), streamEventCloner);
+            }
+        } finally {
+            stateHolder.returnState(state);
         }
+        return streamEvent;
     }
 
-
     @Override
-    public CompiledCondition compileCondition(Expression expression,
-                                              MatchingMetaInfoHolder matchingMetaInfoHolder,
-                                              SiddhiAppContext siddhiAppContext,
+    public CompiledCondition compileCondition(Expression expression, MatchingMetaInfoHolder matchingMetaInfoHolder,
                                               List<VariableExpressionExecutor> variableExpressionExecutors,
-                                              Map<String, Table> tableMap, String s) {
-        return OperatorParser.constructOperator(map.values(), expression, matchingMetaInfoHolder, siddhiAppContext,
-                variableExpressionExecutors, tableMap, this.queryName);
+                                              Map<String, Table> tableMap, SiddhiQueryContext siddhiQueryContext) {
+        WindowState state = stateHolder.getState();
+        CompiledCondition compiledCondition;
+        try {
+            compiledCondition = OperatorParser.constructOperator(state.map.values(), expression,
+                    matchingMetaInfoHolder, variableExpressionExecutors, tableMap, siddhiQueryContext);
+        } finally {
+            stateHolder.returnState(state);
+        }
+        return compiledCondition;
     }
 
     private String generateKey(StreamEvent event) {
@@ -183,5 +206,24 @@ public class UniqueEverWindowProcessor extends WindowProcessor implements Findab
             stringBuilder.append(executor.execute(event));
         }
         return stringBuilder.toString();
+    }
+
+    class WindowState extends State {
+        private ConcurrentMap<String, StreamEvent> map = new ConcurrentHashMap<>();
+
+        @Override
+        public boolean canDestroy() {
+            return false;
+        }
+
+        @Override
+        public Map<String, Object> snapshot() {
+            return singletonMap("map", this.map);
+        }
+
+        @Override
+        public void restore(Map<String, Object> state) {
+            this.map = (ConcurrentMap<String, StreamEvent>) state.get("map");
+        }
     }
 }

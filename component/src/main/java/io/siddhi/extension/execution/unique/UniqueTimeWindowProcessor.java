@@ -22,13 +22,18 @@ import io.siddhi.annotation.Extension;
 import io.siddhi.annotation.Parameter;
 import io.siddhi.annotation.util.DataType;
 import io.siddhi.core.config.SiddhiAppContext;
+import io.siddhi.core.config.SiddhiQueryContext;
 import io.siddhi.core.event.ComplexEventChunk;
 import io.siddhi.core.event.state.StateEvent;
+import io.siddhi.core.event.stream.MetaStreamEvent;
 import io.siddhi.core.event.stream.StreamEvent;
 import io.siddhi.core.event.stream.StreamEventCloner;
+import io.siddhi.core.event.stream.holder.StreamEventClonerHolder;
+import io.siddhi.core.event.stream.populater.ComplexEventPopulater;
 import io.siddhi.core.executor.ConstantExpressionExecutor;
 import io.siddhi.core.executor.ExpressionExecutor;
 import io.siddhi.core.executor.VariableExpressionExecutor;
+import io.siddhi.core.query.processor.ProcessingMode;
 import io.siddhi.core.query.processor.Processor;
 import io.siddhi.core.query.processor.SchedulingProcessor;
 import io.siddhi.core.query.processor.stream.window.FindableProcessor;
@@ -40,6 +45,9 @@ import io.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
 import io.siddhi.core.util.collection.operator.Operator;
 import io.siddhi.core.util.config.ConfigReader;
 import io.siddhi.core.util.parser.OperatorParser;
+import io.siddhi.core.util.snapshot.state.State;
+import io.siddhi.core.util.snapshot.state.StateFactory;
+import io.siddhi.query.api.definition.AbstractDefinition;
 import io.siddhi.query.api.definition.Attribute;
 import io.siddhi.query.api.exception.SiddhiAppValidationException;
 import io.siddhi.query.api.expression.Expression;
@@ -92,32 +100,35 @@ import java.util.concurrent.ConcurrentMap;
         }
 )
 
-public class UniqueTimeWindowProcessor extends WindowProcessor implements SchedulingProcessor, FindableProcessor {
-
-    private ConcurrentMap<String, StreamEvent> map = new ConcurrentHashMap<String, StreamEvent>();
+public class UniqueTimeWindowProcessor extends WindowProcessor<UniqueTimeWindowProcessor.WindowState>
+        implements SchedulingProcessor, FindableProcessor {
     private long timeInMilliSeconds;
-    private ComplexEventChunk<StreamEvent> expiredEventChunk;
     private Scheduler scheduler;
     private SiddhiAppContext siddhiAppContext;
     private volatile long lastTimestamp = Long.MIN_VALUE;
     private ExpressionExecutor uniqueKeyExpressionExecutor;
-
+    private StreamEventCloner streamEventCloner;
 
     @Override
-    public synchronized Scheduler getScheduler() {
+    public Scheduler getScheduler() {
         return scheduler;
     }
 
     @Override
-    public synchronized void setScheduler(Scheduler scheduler) {
+    public void setScheduler(Scheduler scheduler) {
         this.scheduler = scheduler;
     }
 
     @Override
-    protected void init(ExpressionExecutor[] attributeExpressionExecutors, ConfigReader configReader,
-                        boolean outputExpectsExpiredEvents, SiddhiAppContext siddhiAppContext) {
-        this.siddhiAppContext = siddhiAppContext;
-        this.expiredEventChunk = new ComplexEventChunk<StreamEvent>(false);
+    protected StateFactory<WindowState> init(MetaStreamEvent metaStreamEvent,
+                                             AbstractDefinition inputDefinition,
+                                             ExpressionExecutor[] attributeExpressionExecutors,
+                                             ConfigReader configReader,
+                                             StreamEventClonerHolder streamEventClonerHolder,
+                                             boolean outputExpectsExpiredEvents,
+                                             boolean findToBeExecuted,
+                                             SiddhiQueryContext siddhiQueryContext) {
+        this.siddhiAppContext = siddhiQueryContext.getSiddhiAppContext();
         if (attributeExpressionExecutors.length == 2) {
             uniqueKeyExpressionExecutor = attributeExpressionExecutors[0];
             if (attributeExpressionExecutors[1] instanceof ConstantExpressionExecutor) {
@@ -143,12 +154,16 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
                     + "(<string|int|bool|long|double|float> unique attribute, <int|long|time> windowTime), but found "
                     + attributeExpressionExecutors.length + " input attributes");
         }
+        return () -> new WindowState(new ComplexEventChunk<StreamEvent>(false));
     }
 
+
     @Override
-    protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
-                           StreamEventCloner streamEventCloner) {
-        synchronized (this) {
+    protected void processEventChunk(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
+                                     StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater,
+                                     WindowState state) {
+        this.streamEventCloner = streamEventCloner;
+        synchronized (state) {
             while (streamEventChunk.hasNext()) {
                 StreamEvent streamEvent = streamEventChunk.next();
                 long currentTime = siddhiAppContext.getTimestampGenerator().currentTime();
@@ -158,8 +173,8 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
                     clonedEvent.setType(StreamEvent.Type.EXPIRED);
                     StreamEvent eventClonedForMap = streamEventCloner.copyStreamEvent(streamEvent);
                     eventClonedForMap.setType(StreamEvent.Type.EXPIRED);
-                    oldEvent = map.put(generateKey(eventClonedForMap), eventClonedForMap);
-                    this.expiredEventChunk.add(clonedEvent);
+                    oldEvent = state.map.put(generateKey(eventClonedForMap), eventClonedForMap);
+                    state.expiredEventChunk.add(clonedEvent);
                     if (lastTimestamp < clonedEvent.getTimestamp()) {
                         if (scheduler != null) {
                             scheduler.notifyAt(clonedEvent.getTimestamp() + timeInMilliSeconds);
@@ -167,30 +182,30 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
                         }
                     }
                 }
-                expiredEventChunk.reset();
-                while (expiredEventChunk.hasNext()) {
-                    StreamEvent expiredEvent = expiredEventChunk.next();
+                state.expiredEventChunk.reset();
+                while (state.expiredEventChunk.hasNext()) {
+                    StreamEvent expiredEvent = state.expiredEventChunk.next();
                     long timeDiff = expiredEvent.getTimestamp() - currentTime + timeInMilliSeconds;
                     if (timeDiff <= 0 || oldEvent != null) {
                         if (oldEvent != null) {
                             if (expiredEvent.equals(oldEvent)) {
-                                this.expiredEventChunk.remove();
+                                state.expiredEventChunk.remove();
                                 streamEventChunk.insertBeforeCurrent(oldEvent);
                                 oldEvent.setTimestamp(currentTime);
                                 oldEvent = null;
                             }
                         } else {
-                            expiredEventChunk.remove();
+                            state.expiredEventChunk.remove();
                             expiredEvent.setTimestamp(currentTime);
                             streamEventChunk.insertBeforeCurrent(expiredEvent);
                             expiredEvent.setTimestamp(currentTime);
-                            expiredEventChunk.reset();
+                            state.expiredEventChunk.reset();
                         }
                     } else {
                         break;
                     }
                 }
-                expiredEventChunk.reset();
+                state.expiredEventChunk.reset();
                 if (streamEvent.getType() != StreamEvent.Type.CURRENT) {
                     streamEventChunk.remove();
                 }
@@ -200,23 +215,38 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
     }
 
     @Override
-    public synchronized StreamEvent find(StateEvent matchingEvent, CompiledCondition compiledCondition) {
-        if (compiledCondition instanceof Operator) {
-            return ((Operator) compiledCondition).find(matchingEvent, expiredEventChunk, streamEventCloner);
-        } else {
-            return null;
-        }
+    public ProcessingMode getProcessingMode() {
+        return ProcessingMode.BATCH;
     }
 
     @Override
-    public CompiledCondition compileCondition(Expression expression,
-                                              MatchingMetaInfoHolder matchingMetaInfoHolder,
-                                              SiddhiAppContext siddhiAppContext,
+    public StreamEvent find(StateEvent matchingEvent, CompiledCondition compiledCondition) {
+        WindowState state = stateHolder.getState();
+        StreamEvent streamEvent = null;
+        try {
+            if (compiledCondition instanceof Operator) {
+                streamEvent =  ((Operator) compiledCondition).find(matchingEvent, state.expiredEventChunk,
+                        streamEventCloner);
+            }
+        } finally {
+            stateHolder.returnState(state);
+        }
+        return streamEvent;
+    }
+
+    @Override
+    public CompiledCondition compileCondition(Expression expression, MatchingMetaInfoHolder matchingMetaInfoHolder,
                                               List<VariableExpressionExecutor> variableExpressionExecutors,
-                                              Map<String, Table> tableMap,
-                                              String queryName) {
-        return OperatorParser.constructOperator(expiredEventChunk, expression, matchingMetaInfoHolder, siddhiAppContext,
-                variableExpressionExecutors, tableMap, this.queryName);
+                                              Map<String, Table> tableMap, SiddhiQueryContext siddhiQueryContext) {
+        WindowState state = stateHolder.getState();
+        CompiledCondition compiledCondition;
+        try {
+            compiledCondition = OperatorParser.constructOperator(state.expiredEventChunk, expression,
+                    matchingMetaInfoHolder, variableExpressionExecutors, tableMap, siddhiQueryContext);
+        } finally {
+            stateHolder.returnState(state);
+        }
+        return compiledCondition;
     }
 
     @Override
@@ -229,21 +259,6 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
         //Do nothing
     }
 
-    @Override
-    public Map<String, Object> currentState() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("expiredEventchunck", expiredEventChunk.getFirst());
-        map.put("map", this.map);
-        return map;
-    }
-
-    @Override
-    public void restoreState(Map<String, Object> map) {
-        expiredEventChunk.clear();
-        expiredEventChunk.add((StreamEvent) map.get("expiredEventchunck"));
-        this.map = (ConcurrentMap) map.get("map");
-    }
-
     /**
      * Used to generate key in map to get the old event for current event. It will map key which we give as unique
      * attribute with the event
@@ -254,4 +269,32 @@ public class UniqueTimeWindowProcessor extends WindowProcessor implements Schedu
         return uniqueKeyExpressionExecutor.execute(event).toString();
     }
 
+    class WindowState extends State {
+        private ConcurrentMap<String, StreamEvent> map = new ConcurrentHashMap<String, StreamEvent>();
+        private ComplexEventChunk<StreamEvent> expiredEventChunk;
+
+        public WindowState(ComplexEventChunk<StreamEvent> expiredEventChunk) {
+            this.expiredEventChunk = expiredEventChunk;
+        }
+
+        @Override
+        public boolean canDestroy() {
+            return false;
+        }
+
+        @Override
+        public Map<String, Object> snapshot() {
+            Map<String, Object> map = new HashMap<>();
+            map.put("expiredEventchunck", expiredEventChunk.getFirst());
+            map.put("map", this.map);
+            return map;
+        }
+
+        @Override
+        public void restore(Map<String, Object> state) {
+            expiredEventChunk.clear();
+            expiredEventChunk.add((StreamEvent) state.get("expiredEventchunck"));
+            this.map = (ConcurrentMap) state.get("map");
+        }
+    }
 }

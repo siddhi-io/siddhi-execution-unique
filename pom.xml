@@ -51,6 +51,7 @@
         <log4j.version>1.2.17.wso2v1</log4j.version>
         <testng.version>6.11</testng.version>
         <jacoco.maven.version>0.7.9</jacoco.maven.version>
+        <mavan.findbugsplugin.exclude.file>findbugs-exclude.xml</mavan.findbugsplugin.exclude.file>
     </properties>
 
     <scm>

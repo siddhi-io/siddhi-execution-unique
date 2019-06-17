@@ -4,15 +4,15 @@
     <test name="UniqueWindowProcessorTest">
         <classes>
             <class name="io.siddhi.extension.execution.unique.UniqueEverWindowTestCase" />
-            <class name="io.siddhi.extension.execution.unique.UniqueExternalTimeBatchWindowProcessor" />
-            <class name="io.siddhi.extension.execution.unique.UniqueLengthBatchWindowTestCase" />
-            <class name="io.siddhi.extension.execution.unique.UniqueTimeWindowTestCase" />
-            <class name="io.siddhi.extension.execution.unique.UniqueFirstLengthBatchWindowTestCase" />
-            <class name="io.siddhi.extension.execution.unique.UniqueLengthWindowTestCase" />
-            <class name="io.siddhi.extension.execution.unique.UniqueFirstWindowTestCase" />
-            <class name="io.siddhi.extension.execution.unique.UniqueExternalTimeBatchWindowTestCase" />
-            <class name="io.siddhi.extension.execution.unique.UniqueFirstTimeBatchWindowTestCase" />
-            <class name="io.siddhi.extension.execution.unique.UniqueTimeBatchWindowTestCase" />
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueExternalTimeBatchWindowProcessor" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueLengthBatchWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueTimeWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueFirstLengthBatchWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueLengthWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueFirstWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueExternalTimeBatchWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueFirstTimeBatchWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueTimeBatchWindowTestCase" />-->
         </classes>
     </test>
 </suite>
