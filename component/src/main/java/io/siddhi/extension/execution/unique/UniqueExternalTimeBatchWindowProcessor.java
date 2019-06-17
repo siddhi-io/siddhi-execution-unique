@@ -16,35 +16,43 @@
  * under the License.
  */
 
-package org.wso2.extension.siddhi.execution.unique;
+package io.siddhi.extension.execution.unique;
 
-import org.wso2.siddhi.annotation.Example;
-import org.wso2.siddhi.annotation.Extension;
-import org.wso2.siddhi.annotation.Parameter;
-import org.wso2.siddhi.annotation.util.DataType;
-import org.wso2.siddhi.core.config.SiddhiAppContext;
-import org.wso2.siddhi.core.event.ComplexEvent;
-import org.wso2.siddhi.core.event.ComplexEventChunk;
-import org.wso2.siddhi.core.event.state.StateEvent;
-import org.wso2.siddhi.core.event.stream.StreamEvent;
-import org.wso2.siddhi.core.event.stream.StreamEventCloner;
-import org.wso2.siddhi.core.executor.ConstantExpressionExecutor;
-import org.wso2.siddhi.core.executor.ExpressionExecutor;
-import org.wso2.siddhi.core.executor.VariableExpressionExecutor;
-import org.wso2.siddhi.core.query.processor.Processor;
-import org.wso2.siddhi.core.query.processor.SchedulingProcessor;
-import org.wso2.siddhi.core.query.processor.stream.window.FindableProcessor;
-import org.wso2.siddhi.core.query.processor.stream.window.WindowProcessor;
-import org.wso2.siddhi.core.table.Table;
-import org.wso2.siddhi.core.util.Scheduler;
-import org.wso2.siddhi.core.util.collection.operator.CompiledCondition;
-import org.wso2.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
-import org.wso2.siddhi.core.util.collection.operator.Operator;
-import org.wso2.siddhi.core.util.config.ConfigReader;
-import org.wso2.siddhi.core.util.parser.OperatorParser;
-import org.wso2.siddhi.query.api.definition.Attribute;
-import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
-import org.wso2.siddhi.query.api.expression.Expression;
+import io.siddhi.annotation.Example;
+import io.siddhi.annotation.Extension;
+import io.siddhi.annotation.Parameter;
+import io.siddhi.annotation.util.DataType;
+import io.siddhi.core.config.SiddhiAppContext;
+import io.siddhi.core.config.SiddhiQueryContext;
+import io.siddhi.core.event.ComplexEvent;
+import io.siddhi.core.event.ComplexEventChunk;
+import io.siddhi.core.event.state.StateEvent;
+import io.siddhi.core.event.stream.MetaStreamEvent;
+import io.siddhi.core.event.stream.StreamEvent;
+import io.siddhi.core.event.stream.StreamEventCloner;
+import io.siddhi.core.event.stream.holder.StreamEventClonerHolder;
+import io.siddhi.core.event.stream.populater.ComplexEventPopulater;
+import io.siddhi.core.executor.ConstantExpressionExecutor;
+import io.siddhi.core.executor.ExpressionExecutor;
+import io.siddhi.core.executor.VariableExpressionExecutor;
+import io.siddhi.core.query.processor.ProcessingMode;
+import io.siddhi.core.query.processor.Processor;
+import io.siddhi.core.query.processor.SchedulingProcessor;
+import io.siddhi.core.query.processor.stream.window.FindableProcessor;
+import io.siddhi.core.query.processor.stream.window.WindowProcessor;
+import io.siddhi.core.table.Table;
+import io.siddhi.core.util.Scheduler;
+import io.siddhi.core.util.collection.operator.CompiledCondition;
+import io.siddhi.core.util.collection.operator.MatchingMetaInfoHolder;
+import io.siddhi.core.util.collection.operator.Operator;
+import io.siddhi.core.util.config.ConfigReader;
+import io.siddhi.core.util.parser.OperatorParser;
+import io.siddhi.core.util.snapshot.state.State;
+import io.siddhi.core.util.snapshot.state.StateFactory;
+import io.siddhi.query.api.definition.AbstractDefinition;
+import io.siddhi.query.api.definition.Attribute;
+import io.siddhi.query.api.exception.SiddhiAppValidationException;
+import io.siddhi.query.api.expression.Expression;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -116,32 +124,35 @@ import java.util.Map;
                 )
         }
 )
-
-public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
+public class UniqueExternalTimeBatchWindowProcessor
+        extends WindowProcessor<UniqueExternalTimeBatchWindowProcessor.WindowState>
         implements SchedulingProcessor, FindableProcessor {
-    private Map<Object, StreamEvent> currentEvents = new LinkedHashMap<Object, StreamEvent>();
-    private Map<Object, StreamEvent> expiredEvents = null;
-    private volatile StreamEvent resetEvent = null;
     private VariableExpressionExecutor timestampExpressionExecutor;
     private long timeToKeep;
-    private long endTime = -1;
-    private long startTime = 0;
     private boolean isStartTimeEnabled = false;
     private long schedulerTimeout = 0;
     private Scheduler scheduler;
-    private long lastScheduledTime;
-    private long lastCurrentEventTime;
-    private boolean flushed = false;
     private boolean storeExpiredEvents = false;
     private ExpressionExecutor uniqueExpressionExecutor;
     private boolean replaceTimestampWithBatchEndTime = false;
     private boolean outputExpectsExpiredEvents;
+    private SiddhiAppContext siddhiAppContext;
+    private StreamEventCloner streamEventCloner;
 
-    @Override protected void init(ExpressionExecutor[] attributeExpressionExecutors, ConfigReader configReader,
-            boolean outputExpectsExpiredEvents, SiddhiAppContext siddhiAppContext) {
-
+    @Override
+    protected StateFactory<WindowState> init(MetaStreamEvent metaStreamEvent,
+                                             AbstractDefinition inputDefinition,
+                                             ExpressionExecutor[] attributeExpressionExecutors,
+                                             ConfigReader configReader,
+                                             StreamEventClonerHolder streamEventClonerHolder,
+                                             boolean outputExpectsExpiredEvents,
+                                             boolean findToBeExecuted,
+                                             SiddhiQueryContext siddhiQueryContext) {
+        this.siddhiAppContext = siddhiQueryContext.getSiddhiAppContext();
+        Map<Object, StreamEvent> expiredEvents = null;
+        long startTime = 0;
         if (outputExpectsExpiredEvents) {
-            this.expiredEvents = new LinkedHashMap<Object, StreamEvent>();
+            expiredEvents = new LinkedHashMap<>();
             this.storeExpiredEvents = true;
         }
         this.outputExpectsExpiredEvents = outputExpectsExpiredEvents;
@@ -166,19 +177,21 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
             } else if (attributeExpressionExecutors[2].getReturnType() == Attribute.Type.LONG) {
                 timeToKeep = (Long) ((ConstantExpressionExecutor) attributeExpressionExecutors[2]).getValue();
             } else {
-                throw new SiddhiAppValidationException(
-                        "ExternalTimeBatch window's 3rd parameter windowTime should be either int or long, but found "
-                                + attributeExpressionExecutors[2].getReturnType());
+                throw new SiddhiAppValidationException("ExternalTimeBatch window's 3rd parameter windowTime " +
+                        "should be either int or long, but found "
+                        + attributeExpressionExecutors[2].getReturnType());
             }
 
             if (attributeExpressionExecutors.length >= 4) {
                 isStartTimeEnabled = true;
                 if (attributeExpressionExecutors[3].getReturnType() == Attribute.Type.INT) {
                     startTime = Integer.parseInt(
-                            String.valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[3]).getValue()));
+                            String.valueOf(
+                                    ((ConstantExpressionExecutor) attributeExpressionExecutors[3]).getValue()));
                 } else if (attributeExpressionExecutors[3].getReturnType() == Attribute.Type.LONG) {
                     startTime = Long.parseLong(
-                            String.valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[3]).getValue()));
+                            String.valueOf(
+                                    ((ConstantExpressionExecutor) attributeExpressionExecutors[3]).getValue()));
                 } else {
                     throw new SiddhiAppValidationException(
                             "ExternalTimeBatch window's 4th parameter startTime should be "
@@ -190,21 +203,24 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
             if (attributeExpressionExecutors.length >= 5) {
                 if (attributeExpressionExecutors[4].getReturnType() == Attribute.Type.INT) {
                     schedulerTimeout = Integer.parseInt(
-                            String.valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[4]).getValue()));
+                            String.valueOf(
+                                    ((ConstantExpressionExecutor) attributeExpressionExecutors[4]).getValue()));
                 } else if (attributeExpressionExecutors[4].getReturnType() == Attribute.Type.LONG) {
                     schedulerTimeout = Long.parseLong(
-                            String.valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[4]).getValue()));
+                            String.valueOf(
+                                    ((ConstantExpressionExecutor) attributeExpressionExecutors[4]).getValue()));
                 } else {
-                    throw new SiddhiAppValidationException(
-                            "ExternalTimeBatch window's 5th parameter timeout should be either int or long, but found "
-                                    + attributeExpressionExecutors[4].getReturnType());
+                    throw new SiddhiAppValidationException("ExternalTimeBatch window's 5th parameter timeout " +
+                            "should be either int or long, but found "
+                            + attributeExpressionExecutors[4].getReturnType());
                 }
             }
 
             if (attributeExpressionExecutors.length == 6) {
                 if (attributeExpressionExecutors[5].getReturnType() == Attribute.Type.BOOL) {
                     replaceTimestampWithBatchEndTime = Boolean.parseBoolean(
-                            String.valueOf(((ConstantExpressionExecutor) attributeExpressionExecutors[5]).getValue()));
+                            String.valueOf(
+                                    ((ConstantExpressionExecutor) attributeExpressionExecutors[5]).getValue()));
                 } else {
                     throw new SiddhiAppValidationException("ExternalTimeBatch window's 6th parameter "
                             + "replaceTimestampWithBatchEndTime should be bool, but found "
@@ -212,31 +228,36 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
                 }
             }
         } else {
-            throw new SiddhiAppValidationException("ExternalTimeBatch window should only have three to six parameters "
-                    + "(<variable> uniqueAttribute, <long> timestamp, "
+            throw new SiddhiAppValidationException("ExternalTimeBatch window should only have three to six " +
+                    "parameters (<variable> uniqueAttribute, <long> timestamp, "
                     + "<int|long|time> windowTime, <long> startTime, <int|long|time> timeout, "
                     + "<bool> replaceTimestampWithBatchEndTime), but found " + attributeExpressionExecutors.length
                     + " input attributes");
         }
         if (schedulerTimeout > 0) {
             if (expiredEvents == null) {
-                this.expiredEvents = new LinkedHashMap<Object, StreamEvent>();
+                expiredEvents = new LinkedHashMap<>();
             }
         }
 
+        final Map<Object, StreamEvent> expiredEventsFinal = expiredEvents;
+        final long startTimeFinal = startTime;
+
+        return () -> new WindowState(expiredEventsFinal, startTimeFinal);
     }
 
-    @Override protected void process(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
-            StreamEventCloner streamEventCloner) {
-
+    @Override
+    protected void processEventChunk(ComplexEventChunk<StreamEvent> streamEventChunk, Processor nextProcessor,
+                                     StreamEventCloner streamEventCloner, ComplexEventPopulater complexEventPopulater,
+                                     WindowState state) {
         // event incoming trigger process. No events means no action
         if (streamEventChunk.getFirst() == null) {
             return;
         }
-
+        this.streamEventCloner = streamEventCloner;
         List<ComplexEventChunk<StreamEvent>> complexEventChunks = new ArrayList<ComplexEventChunk<StreamEvent>>();
-        synchronized (this) {
-            initTiming(streamEventChunk.getFirst());
+        synchronized (state) {
+            initTiming(streamEventChunk.getFirst(), state);
 
             StreamEvent nextStreamEvent = streamEventChunk.getFirst();
             while (nextStreamEvent != null) {
@@ -245,21 +266,22 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
                 nextStreamEvent = nextStreamEvent.getNext();
 
                 if (currStreamEvent.getType() == ComplexEvent.Type.TIMER) {
-                    if (lastScheduledTime <= currStreamEvent.getTimestamp()) {
+                    if (state.lastScheduledTime <= currStreamEvent.getTimestamp()) {
                         // implies that there have not been any more events after this schedule has been done.
-                        if (!flushed) {
-                            flushToOutputChunk(streamEventCloner, complexEventChunks, lastCurrentEventTime, true);
-                            flushed = true;
+                        if (!state.flushed) {
+                            flushToOutputChunk(streamEventCloner, complexEventChunks, true, state);
+                            state.flushed = true;
                         } else {
-                            if (currentEvents.size() > 0) {
-                                appendToOutputChunk(streamEventCloner, complexEventChunks, lastCurrentEventTime, true);
+                            if (state.currentEvents.size() > 0) {
+                                appendToOutputChunk(streamEventCloner, complexEventChunks, true, state);
                             }
                         }
 
                         // rescheduling to emit the current batch after expiring it if no further events arrive.
-                        lastScheduledTime = siddhiAppContext.getTimestampGenerator().currentTime() + schedulerTimeout;
+                        state.lastScheduledTime = siddhiAppContext.getTimestampGenerator().currentTime()
+                                + schedulerTimeout;
                         if (scheduler != null) {
-                            scheduler.notifyAt(lastScheduledTime);
+                            scheduler.notifyAt(state.lastScheduledTime);
                         }
                     }
                     continue;
@@ -268,26 +290,27 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
                 }
 
                 long currentEventTime = (Long) timestampExpressionExecutor.execute(currStreamEvent);
-                if (lastCurrentEventTime < currentEventTime) {
-                    lastCurrentEventTime = currentEventTime;
+                if (state.lastCurrentEventTime < currentEventTime) {
+                    state.lastCurrentEventTime = currentEventTime;
                 }
 
-                if (currentEventTime < endTime) {
-                    cloneAppend(streamEventCloner, currStreamEvent);
+                if (currentEventTime < state.endTime) {
+                    cloneAppend(streamEventCloner, currStreamEvent, state);
                 } else {
-                    if (flushed) {
-                        appendToOutputChunk(streamEventCloner, complexEventChunks, lastCurrentEventTime, false);
-                        flushed = false;
+                    if (state.flushed) {
+                        appendToOutputChunk(streamEventCloner, complexEventChunks, false, state);
+                        state.flushed = false;
                     } else {
-                        flushToOutputChunk(streamEventCloner, complexEventChunks, lastCurrentEventTime, false);
+                        flushToOutputChunk(streamEventCloner, complexEventChunks, false, state);
                     }
                     // update timestamp, call next processor
-                    endTime = findEndTime(lastCurrentEventTime, startTime, timeToKeep);
-                    cloneAppend(streamEventCloner, currStreamEvent);
+                    state.endTime = findEndTime(state.lastCurrentEventTime, state.startTime, timeToKeep);
+                    cloneAppend(streamEventCloner, currStreamEvent, state);
                     // triggering the last batch expiration.
                     if (schedulerTimeout > 0) {
-                        lastScheduledTime = siddhiAppContext.getTimestampGenerator().currentTime() + schedulerTimeout;
-                        scheduler.notifyAt(lastScheduledTime);
+                        state.lastScheduledTime = siddhiAppContext.getTimestampGenerator().currentTime()
+                                + schedulerTimeout;
+                        scheduler.notifyAt(state.lastScheduledTime);
                     }
                 }
             }
@@ -297,83 +320,91 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
         }
     }
 
-    private void initTiming(StreamEvent firstStreamEvent) {
+    @Override
+    public ProcessingMode getProcessingMode() {
+        return ProcessingMode.BATCH;
+    }
+
+    private void initTiming(StreamEvent firstStreamEvent, WindowState state) {
         // for window beginning, if window is empty, set lastSendTime to incomingChunk first.
-        if (endTime < 0) {
+        if (state.endTime < 0) {
             if (isStartTimeEnabled) {
-                endTime = findEndTime((Long) timestampExpressionExecutor.execute(firstStreamEvent), startTime,
-                        timeToKeep);
+                state.endTime = findEndTime((Long) timestampExpressionExecutor.execute(firstStreamEvent),
+                        state.startTime, timeToKeep);
             } else {
-                startTime = (Long) timestampExpressionExecutor.execute(firstStreamEvent);
-                endTime = startTime + timeToKeep;
+                state.startTime = (Long) timestampExpressionExecutor.execute(firstStreamEvent);
+                state.endTime = state.startTime + timeToKeep;
             }
             if (schedulerTimeout > 0) {
-                lastScheduledTime = siddhiAppContext.getTimestampGenerator().currentTime() + schedulerTimeout;
+                state.lastScheduledTime = siddhiAppContext.getTimestampGenerator().currentTime() + schedulerTimeout;
                 if (scheduler != null) {
-                    scheduler.notifyAt(lastScheduledTime);
+                    scheduler.notifyAt(state.lastScheduledTime);
                 }
             }
         }
     }
 
     private void flushToOutputChunk(StreamEventCloner streamEventCloner,
-            List<ComplexEventChunk<StreamEvent>> complexEventChunks, long currentTime, boolean preserveCurrentEvents) {
-
+                                    List<ComplexEventChunk<StreamEvent>> complexEventChunks,
+                                    boolean preserveCurrentEvents, WindowState state) {
         ComplexEventChunk<StreamEvent> newEventChunk = new ComplexEventChunk<StreamEvent>(true);
         if (outputExpectsExpiredEvents) {
-            if (expiredEvents.size() > 0) {
+            if (state.expiredEvents.size() > 0) {
                 // mark the timestamp for the expiredType event
-                for (StreamEvent expiredEvent : expiredEvents.values()) {
-                    expiredEvent.setTimestamp(currentTime);
+                for (StreamEvent expiredEvent : state.expiredEvents.values()) {
+                    expiredEvent.setTimestamp(state.lastCurrentEventTime);
                     // add expired event to newEventChunk.
                     newEventChunk.add(expiredEvent);
                 }
             }
         }
-        if (expiredEvents != null) {
-            expiredEvents.clear();
+        if (state.expiredEvents != null) {
+            state.expiredEvents.clear();
         }
 
-        if (currentEvents.size() > 0) {
+        if (state.currentEvents.size() > 0) {
 
             // add reset event in front of current events
-            resetEvent.setTimestamp(currentTime);
-            newEventChunk.add(resetEvent);
-            resetEvent = null;
+            state.resetEvent.setTimestamp(state.lastCurrentEventTime);
+            newEventChunk.add(state.resetEvent);
+            state.resetEvent = null;
 
             // move to expired events
-            for (Map.Entry<Object, StreamEvent> currentEventEntry : currentEvents.entrySet()) {
+            for (Map.Entry<Object, StreamEvent> currentEventEntry : state.currentEvents.entrySet()) {
                 if (preserveCurrentEvents || storeExpiredEvents) {
                     StreamEvent toExpireEvent = streamEventCloner.copyStreamEvent(currentEventEntry.getValue());
                     toExpireEvent.setType(StreamEvent.Type.EXPIRED);
-                    expiredEvents.put(currentEventEntry.getKey(), toExpireEvent);
+                    state.expiredEvents.put(currentEventEntry.getKey(), toExpireEvent);
                 }
                 // add current event to next processor
                 newEventChunk.add(currentEventEntry.getValue());
             }
 
         }
-        currentEvents.clear();
+        state.currentEvents.clear();
 
         if (newEventChunk.getFirst() != null) {
             complexEventChunks.add(newEventChunk);
         }
     }
 
+
     private void appendToOutputChunk(StreamEventCloner streamEventCloner,
-            List<ComplexEventChunk<StreamEvent>> complexEventChunks, long currentTime, boolean preserveCurrentEvents) {
+                                     List<ComplexEventChunk<StreamEvent>> complexEventChunks,
+                                     boolean preserveCurrentEvents,
+                                     WindowState state) {
         ComplexEventChunk<StreamEvent> newEventChunk = new ComplexEventChunk<StreamEvent>(true);
         Map<Object, StreamEvent> sentEvents = new LinkedHashMap<Object, StreamEvent>();
 
-        if (currentEvents.size() > 0) {
+        if (state.currentEvents.size() > 0) {
 
-            if (expiredEvents.size() > 0) {
+            if (state.expiredEvents.size() > 0) {
                 // mark the timestamp for the expiredType event
-                for (Map.Entry<Object, StreamEvent> expiredEventEntry : expiredEvents.entrySet()) {
+                for (Map.Entry<Object, StreamEvent> expiredEventEntry : state.expiredEvents.entrySet()) {
                     if (outputExpectsExpiredEvents) {
                         // add expired event to newEventChunk.
                         StreamEvent toExpireEvent = streamEventCloner.copyStreamEvent(expiredEventEntry.getValue());
-                        toExpireEvent.setTimestamp(currentTime);
+                        toExpireEvent.setTimestamp(state.lastCurrentEventTime);
                         newEventChunk.add(toExpireEvent);
                     }
 
@@ -384,16 +415,16 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
             }
 
             // add reset event in front of current events
-            StreamEvent toResetEvent = streamEventCloner.copyStreamEvent(resetEvent);
-            toResetEvent.setTimestamp(currentTime);
+            StreamEvent toResetEvent = streamEventCloner.copyStreamEvent(state.resetEvent);
+            toResetEvent.setTimestamp(state.lastCurrentEventTime);
             newEventChunk.add(toResetEvent);
 
-            for (Map.Entry<Object, StreamEvent> currentEventEntry : currentEvents.entrySet()) {
+            for (Map.Entry<Object, StreamEvent> currentEventEntry : state.currentEvents.entrySet()) {
                 // move to expired events
                 if (preserveCurrentEvents || storeExpiredEvents) {
                     StreamEvent toExpireEvent = streamEventCloner.copyStreamEvent(currentEventEntry.getValue());
                     toExpireEvent.setType(StreamEvent.Type.EXPIRED);
-                    expiredEvents.put(currentEventEntry.getKey(), toExpireEvent);
+                    state.expiredEvents.put(currentEventEntry.getKey(), toExpireEvent);
                 }
                 sentEvents.put(currentEventEntry.getKey(), currentEventEntry.getValue());
             }
@@ -402,7 +433,7 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
                 newEventChunk.add(sentEventEntry);
             }
         }
-        currentEvents.clear();
+        state.currentEvents.clear();
 
         if (newEventChunk.getFirst() != null) {
             complexEventChunks.add(newEventChunk);
@@ -415,15 +446,15 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
         return (currentTime + (timeToKeep - elapsedTimeSinceLastEmit));
     }
 
-    private void cloneAppend(StreamEventCloner streamEventCloner, StreamEvent currStreamEvent) {
+    private void cloneAppend(StreamEventCloner streamEventCloner, StreamEvent currStreamEvent, WindowState state) {
         StreamEvent clonedStreamEvent = streamEventCloner.copyStreamEvent(currStreamEvent);
         if (replaceTimestampWithBatchEndTime) {
-            clonedStreamEvent.setAttribute(endTime, timestampExpressionExecutor.getPosition());
+            clonedStreamEvent.setAttribute(state.endTime, timestampExpressionExecutor.getPosition());
         }
-        currentEvents.put(uniqueExpressionExecutor.execute(clonedStreamEvent), clonedStreamEvent);
-        if (resetEvent == null) {
-            resetEvent = streamEventCloner.copyStreamEvent(currStreamEvent);
-            resetEvent.setType(ComplexEvent.Type.RESET);
+        state.currentEvents.put(uniqueExpressionExecutor.execute(clonedStreamEvent), clonedStreamEvent);
+        if (state.resetEvent == null) {
+            state.resetEvent = streamEventCloner.copyStreamEvent(currStreamEvent);
+            state.resetEvent.setType(ComplexEvent.Type.RESET);
         }
     }
 
@@ -435,64 +466,99 @@ public class UniqueExternalTimeBatchWindowProcessor extends WindowProcessor
         //Do nothing
     }
 
-    public synchronized Map<String, Object> currentState() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("currentEvents", currentEvents);
-        map.put("expiredEvents", expiredEvents);
-        map.put("resetEvent", resetEvent);
-        map.put("endTime", endTime);
-        map.put("startTime", startTime);
-        map.put("lastScheduledTime", lastScheduledTime);
-        map.put("lastCurrentEventTime", lastCurrentEventTime);
-        map.put("flushed", flushed);
-
-        return map;
-    }
-
-    public synchronized void restoreState(Map<String, Object> map) {
-        currentEvents = (Map<Object, StreamEvent>) map.get("currentEvents");
-        if (map.get("expiredEvents") != null) {
-            expiredEvents = (Map<Object, StreamEvent>) map.get("expiredEvents");
-        } else {
-            if (outputExpectsExpiredEvents) {
-                this.expiredEvents = new LinkedHashMap<Object, StreamEvent>();
-            }
-            if (schedulerTimeout > 0) {
-                this.expiredEvents = new LinkedHashMap<Object, StreamEvent>();
-            }
-        }
-        resetEvent = (StreamEvent) map.get("resetEvent");
-        endTime = (Long) map.get("endTime");
-        startTime = (Long) map.get("startTime");
-        lastScheduledTime = (Long) map.get("lastScheduledTime");
-        lastCurrentEventTime = (Long) map.get("lastCurrentEventTime");
-        flushed = (Boolean) map.get("flushed");
-    }
-
-    @Override public synchronized Scheduler getScheduler() {
+    @Override
+    public synchronized Scheduler getScheduler() {
         return this.scheduler;
     }
 
-    @Override public synchronized void setScheduler(Scheduler scheduler) {
+    @Override
+    public synchronized void setScheduler(Scheduler scheduler) {
         this.scheduler = scheduler;
     }
 
-    @Override public synchronized StreamEvent find(StateEvent matchingEvent, CompiledCondition compiledCondition) {
-        if (compiledCondition instanceof Operator) {
-            return ((Operator) compiledCondition).find(matchingEvent, expiredEvents, streamEventCloner);
-        } else {
-            return null;
+    @Override
+    public StreamEvent find(StateEvent matchingEvent, CompiledCondition compiledCondition) {
+        WindowState state = stateHolder.getState();
+        StreamEvent streamEvent = null;
+        try {
+            if (compiledCondition instanceof Operator) {
+                streamEvent = ((Operator) compiledCondition).find(matchingEvent, state.expiredEvents,
+                        streamEventCloner);
+            }
+        } finally {
+            stateHolder.returnState(state);
         }
+        return streamEvent;
     }
 
-    @Override public synchronized CompiledCondition compileCondition(Expression expression,
-            MatchingMetaInfoHolder matchingMetaInfoHolder, SiddhiAppContext siddhiAppContext,
-            List<VariableExpressionExecutor> variableExpressionExecutors, Map<String, Table> tableMap, String s) {
-        if (expiredEvents == null) {
-            expiredEvents = new LinkedHashMap<Object, StreamEvent>();
-            storeExpiredEvents = true;
+    @Override
+    public CompiledCondition compileCondition(Expression expression, MatchingMetaInfoHolder matchingMetaInfoHolder,
+                                              List<VariableExpressionExecutor> variableExpressionExecutors,
+                                              Map<String, Table> tableMap, SiddhiQueryContext siddhiQueryContext) {
+        WindowState state = stateHolder.getState();
+        CompiledCondition compiledCondition;
+        try {
+            if (state.expiredEvents == null) {
+                state.expiredEvents = new LinkedHashMap<>();
+                storeExpiredEvents = true;
+            }
+            compiledCondition = OperatorParser.constructOperator(state.expiredEvents, expression,
+                    matchingMetaInfoHolder, variableExpressionExecutors, tableMap, siddhiQueryContext);
+        } finally {
+            stateHolder.returnState(state);
         }
-        return OperatorParser.constructOperator(expiredEvents, expression, matchingMetaInfoHolder, siddhiAppContext,
-                variableExpressionExecutors, tableMap, this.queryName);
+        return compiledCondition;
+    }
+
+    class WindowState extends State {
+        private Map<Object, StreamEvent> currentEvents = new LinkedHashMap<Object, StreamEvent>();
+        private Map<Object, StreamEvent> expiredEvents = null;
+        private volatile StreamEvent resetEvent = null;
+        private long endTime = -1;
+        private long startTime = 0;
+        private long lastScheduledTime;
+        private long lastCurrentEventTime;
+        private boolean flushed = false;
+
+
+        public WindowState(Map<Object, StreamEvent> expiredEvents, long startTime) {
+            this.expiredEvents = expiredEvents;
+            this.startTime = startTime;
+        }
+
+        @Override
+        public boolean canDestroy() {
+            return false;
+        }
+
+        @Override
+        public Map<String, Object> snapshot() {
+            Map<String, Object> map = new HashMap<>();
+            map.put("currentEvents", currentEvents);
+            map.put("expiredEvents", expiredEvents);
+            map.put("resetEvent", resetEvent);
+            map.put("endTime", endTime);
+            map.put("startTime", startTime);
+            map.put("lastScheduledTime", lastScheduledTime);
+            map.put("lastCurrentEventTime", lastCurrentEventTime);
+            map.put("flushed", flushed);
+            return map;
+        }
+
+        @Override
+        public void restore(Map<String, Object> state) {
+            currentEvents = (Map<Object, StreamEvent>) state.get("currentEvents");
+            if (state.get("expiredEvents") != null) {
+                expiredEvents = (Map<Object, StreamEvent>) state.get("expiredEvents");
+            } else if (outputExpectsExpiredEvents || schedulerTimeout > 0) {
+                this.expiredEvents = new LinkedHashMap<>();
+            }
+            resetEvent = (StreamEvent) state.get("resetEvent");
+            endTime = (Long) state.get("endTime");
+            startTime = (Long) state.get("startTime");
+            lastScheduledTime = (Long) state.get("lastScheduledTime");
+            lastCurrentEventTime = (Long) state.get("lastCurrentEventTime");
+            flushed = (Boolean) state.get("flushed");
+        }
     }
 }

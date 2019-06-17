@@ -3,16 +3,16 @@
 <suite name="UniqueWindowProcessorTestSuit" verbose="1">
     <test name="UniqueWindowProcessorTest">
         <classes>
-            <class name="org.wso2.extension.siddhi.execution.unique.UniqueEverWindowTestCase" />
-            <class name="org.wso2.extension.siddhi.execution.unique.UniqueExternalTimeBatchWindowProcessor" />
-            <class name="org.wso2.extension.siddhi.execution.unique.UniqueLengthBatchWindowTestCase" />
-            <class name="org.wso2.extension.siddhi.execution.unique.UniqueTimeWindowTestCase" />
-            <class name="org.wso2.extension.siddhi.execution.unique.UniqueFirstLengthBatchWindowTestCase" />
-            <class name="org.wso2.extension.siddhi.execution.unique.UniqueLengthWindowTestCase" />
-            <class name="org.wso2.extension.siddhi.execution.unique.UniqueFirstWindowTestCase" />
-            <class name="org.wso2.extension.siddhi.execution.unique.UniqueExternalTimeBatchWindowTestCase" />
-            <class name="org.wso2.extension.siddhi.execution.unique.UniqueFirstTimeBatchWindowTestCase" />
-            <class name="org.wso2.extension.siddhi.execution.unique.UniqueTimeBatchWindowTestCase" />
+            <class name="io.siddhi.extension.execution.unique.UniqueEverWindowTestCase" />
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueExternalTimeBatchWindowProcessor" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueLengthBatchWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueTimeWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueFirstLengthBatchWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueLengthWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueFirstWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueExternalTimeBatchWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueFirstTimeBatchWindowTestCase" />-->
+            <!--<class name="io.siddhi.extension.execution.unique.UniqueTimeBatchWindowTestCase" />-->
         </classes>
     </test>
 </suite>

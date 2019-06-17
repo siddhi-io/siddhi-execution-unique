@@ -16,14 +16,14 @@
  * under the License.
  */
 
-package org.wso2.extension.siddhi.execution.unique;
+package io.siddhi.extension.execution.unique;
 
-import org.wso2.siddhi.annotation.Example;
-import org.wso2.siddhi.annotation.Extension;
-import org.wso2.siddhi.annotation.Parameter;
-import org.wso2.siddhi.annotation.util.DataType;
-import org.wso2.siddhi.core.event.stream.StreamEvent;
-import org.wso2.siddhi.core.executor.ExpressionExecutor;
+import io.siddhi.annotation.Example;
+import io.siddhi.annotation.Extension;
+import io.siddhi.annotation.Parameter;
+import io.siddhi.annotation.util.DataType;
+import io.siddhi.core.event.stream.StreamEvent;
+import io.siddhi.core.executor.ExpressionExecutor;
 
 import java.util.Map;
 
