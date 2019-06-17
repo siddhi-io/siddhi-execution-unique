@@ -27,7 +27,7 @@
 
     <groupId>io.siddhi.extension.execution.unique</groupId>
     <artifactId>siddhi-execution-unique-parent</artifactId>
-    <version>5.0.0-SNAPSHOT</version>
+    <version>5.0.0</version>
     <packaging>pom</packaging>
     <name>Siddhi Execution Unique Extension Parent</name>
     <url>http://wso2.org</url>
@@ -59,7 +59,7 @@
         <url>https://github.com/wso2-extensions/siddhi-execution-unique.git</url>
         <developerConnection>scm:git:https://github.com/wso2-extensions/siddhi-execution-unique.git
         </developerConnection>
-        <tag>HEAD</tag>
+        <tag>v5.0.0</tag>
     </scm>
 
     <dependencyManagement>
