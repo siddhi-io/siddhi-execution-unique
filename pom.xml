@@ -55,9 +55,9 @@
     </properties>
 
     <scm>
-        <connection>scm:git:https://github.com/wso2-extensions/siddhi-execution-unique.git</connection>
-        <url>https://github.com/wso2-extensions/siddhi-execution-unique.git</url>
-        <developerConnection>scm:git:https://github.com/wso2-extensions/siddhi-execution-unique.git
+        <connection>scm:git:https://github.com/siddhi-io/siddhi-execution-unique.git</connection>
+        <url>https://github.com/siddhi-io/siddhi-execution-unique.git</url>
+        <developerConnection>scm:git:https://github.com/siddhi-io/siddhi-execution-unique.git
         </developerConnection>
         <tag>HEAD</tag>
     </scm>
