@@ -20,6 +20,7 @@ package io.siddhi.extension.execution.unique;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.annotation.Parameter;
+import io.siddhi.annotation.ParameterOverload;
 import io.siddhi.annotation.util.DataType;
 import io.siddhi.core.config.SiddhiAppContext;
 import io.siddhi.core.config.SiddhiQueryContext;
@@ -74,22 +75,27 @@ import java.util.Map;
                 @Parameter(name = "unique.key",
                         description = "The attribute that should be checked for uniqueness.",
                         type = {DataType.INT, DataType.LONG, DataType.FLOAT,
-                                DataType.BOOL, DataType.DOUBLE}),
-
+                                DataType.BOOL, DataType.DOUBLE, DataType.STRING},
+                        dynamic = true),
                 @Parameter(name = "window.time",
                         description = "The sliding time period for which the window should hold the events.",
-                        type = {DataType.INT, DataType.LONG}),
-
+                        type = {DataType.INT, DataType.LONG},
+                        dynamic = true),
                 @Parameter(name = "start.time",
                         description = "This specifies an offset in milliseconds in order to start the" +
                                 " window at a time different to the standard time.",
                         type = {DataType.INT, DataType.LONG},
+                        dynamic = true,
                         optional = true,
                         defaultValue = "Timestamp of first event"),
-
                 @Parameter(name = "window.length",
                         description = "The number of events the window should tumble.",
-                        type = {DataType.INT})
+                        type = {DataType.INT},
+                        dynamic = true)
+        },
+        parameterOverloads = {
+                @ParameterOverload(parameterNames = {"unique.key", "window.time", "window.length"}),
+                @ParameterOverload(parameterNames = {"unique.key", "window.time", "start.time", "window.length"})
         },
         examples = {
                 @Example(

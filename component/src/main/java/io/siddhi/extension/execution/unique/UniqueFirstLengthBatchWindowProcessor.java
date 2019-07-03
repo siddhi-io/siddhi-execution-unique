@@ -21,6 +21,7 @@ package io.siddhi.extension.execution.unique;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.annotation.Parameter;
+import io.siddhi.annotation.ParameterOverload;
 import io.siddhi.annotation.util.DataType;
 import io.siddhi.core.event.stream.StreamEvent;
 import io.siddhi.core.executor.ExpressionExecutor;
@@ -45,10 +46,15 @@ import java.util.Map;
                 @Parameter(name = "unique.key",
                         description = "The attribute that should be checked for uniqueness.",
                         type = {DataType.INT, DataType.LONG, DataType.FLOAT,
-                                DataType.BOOL, DataType.DOUBLE}),
+                                DataType.BOOL, DataType.DOUBLE, DataType.STRING},
+                        dynamic = true),
                 @Parameter(name = "window.length",
                         description = "The number of events the window should tumble.",
-                        type = {DataType.INT}),
+                        type = {DataType.INT},
+                        dynamic = true),
+        },
+        parameterOverloads = {
+                @ParameterOverload(parameterNames = {"unique.key", "window.length"}),
         },
         examples = {
                 @Example(

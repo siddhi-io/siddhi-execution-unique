@@ -20,6 +20,7 @@ package io.siddhi.extension.execution.unique;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.annotation.Parameter;
+import io.siddhi.annotation.ParameterOverload;
 import io.siddhi.annotation.util.DataType;
 import io.siddhi.core.config.SiddhiAppContext;
 import io.siddhi.core.config.SiddhiQueryContext;
@@ -70,11 +71,16 @@ import java.util.concurrent.ConcurrentHashMap;
                 @Parameter(name = "unique.key",
                         description = "The attribute that should be checked for uniqueness.",
                         type = {DataType.INT, DataType.LONG, DataType.FLOAT,
-                                DataType.BOOL, DataType.DOUBLE}),
+                                DataType.BOOL, DataType.DOUBLE, DataType.STRING},
+                        dynamic = true),
                 @Parameter(name = "window.length",
                         description = "The number of events that should be "
                                 + "included in a sliding length window.",
-                        type = {DataType.INT})
+                        type = {DataType.INT},
+                        dynamic = true)
+        },
+        parameterOverloads = {
+                @ParameterOverload(parameterNames = {"unique.key", "window.length"})
         },
         examples = @Example(
                 syntax = "define stream CseEventStream (symbol string, price float, volume int)\n" +

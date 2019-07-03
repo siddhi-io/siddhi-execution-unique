@@ -21,6 +21,7 @@ package io.siddhi.extension.execution.unique;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.annotation.Parameter;
+import io.siddhi.annotation.ParameterOverload;
 import io.siddhi.annotation.util.DataType;
 import io.siddhi.core.config.SiddhiAppContext;
 import io.siddhi.core.config.SiddhiQueryContext;
@@ -80,7 +81,8 @@ import java.util.Map;
                 @Parameter(name = "unique.key",
                         description = "The attribute that should be checked for uniqueness.",
                         type = {DataType.INT, DataType.LONG, DataType.FLOAT,
-                                DataType.BOOL, DataType.DOUBLE}),
+                                DataType.BOOL, DataType.DOUBLE, DataType.STRING},
+                        dynamic = true),
                 @Parameter(name = "time.stamp",
                         description = " The time which the window determines as the current time and acts upon."
                                 + " The value of this parameter should be monotonically increasing.",
@@ -105,6 +107,14 @@ import java.util.Map;
                         type = {DataType.INT, DataType.LONG},
                         optional = true,
                         defaultValue = "false")
+        },
+        parameterOverloads = {
+                @ParameterOverload(parameterNames = {"unique.key", "time.stamp", "window.time"}),
+                @ParameterOverload(parameterNames = {"unique.key", "time.stamp", "window.time", "start.time"}),
+                @ParameterOverload(parameterNames = {"unique.key", "time.stamp", "window.time", "start.time",
+                        "time.out"}),
+                @ParameterOverload(parameterNames = {"unique.key", "time.stamp", "window.time", "start.time",
+                        "time.out", "replace.time.stamp.with.batch.end.time"})
         },
         examples = {
                 @Example(
