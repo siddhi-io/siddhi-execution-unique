@@ -20,6 +20,7 @@ package io.siddhi.extension.execution.unique;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.annotation.Parameter;
+import io.siddhi.annotation.ParameterOverload;
 import io.siddhi.annotation.util.DataType;
 import io.siddhi.core.config.SiddhiAppContext;
 import io.siddhi.core.config.SiddhiQueryContext;
@@ -77,10 +78,13 @@ import java.util.concurrent.ConcurrentMap;
                 @Parameter(name = "unique.key",
                         description = "The attribute that should be checked for uniqueness. ",
                         type = {DataType.INT, DataType.LONG, DataType.FLOAT,
-                                DataType.BOOL, DataType.DOUBLE}),
+                                DataType.BOOL, DataType.DOUBLE, DataType.STRING}),
                 @Parameter(name = "window.time",
                         description = "The sliding time period for which the window should hold events.",
                         type = {DataType.INT, DataType.LONG})
+        },
+        parameterOverloads = {
+                @ParameterOverload(parameterNames = {"unique.key", "window.time"})
         },
         examples = {
                 @Example(

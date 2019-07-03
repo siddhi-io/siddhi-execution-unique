@@ -21,6 +21,7 @@ package io.siddhi.extension.execution.unique;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.annotation.Parameter;
+import io.siddhi.annotation.ParameterOverload;
 import io.siddhi.annotation.util.DataType;
 import io.siddhi.core.config.SiddhiQueryContext;
 import io.siddhi.core.event.ComplexEvent;
@@ -73,7 +74,12 @@ import static java.util.Collections.singletonMap;
                                 + " If there is more than one parameter to check for uniqueness,"
                                 + " it can be specified as an array separated by commas.",
                         type = {DataType.INT, DataType.LONG, DataType.FLOAT,
-                                DataType.BOOL, DataType.DOUBLE}),
+                                DataType.BOOL, DataType.DOUBLE, DataType.STRING},
+                        dynamic = true),
+        },
+        parameterOverloads = {
+                @ParameterOverload(parameterNames = {"unique.key"}),
+                @ParameterOverload(parameterNames = {"unique.key", "..."}),
         },
         examples = {
                 @Example(
