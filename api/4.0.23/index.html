@@ -857,7 +857,7 @@
                 
                 <h1 id="api-docs-v4023">API Docs - v4.0.23</h1>
 <h2 id="unique">Unique</h2>
-<h3 id="ever-window">ever <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
+<h3 id="ever-window">ever <em><a target="_blank" href="https://siddhi.io/en/v4.x/docs/query-guide/#window">(Window)</a></em></h3>
 <p style="word-wrap: break-word">This is a  window that is updated with the latest events based on a unique key parameter. When a new event that arrives, has the same value for the unique key parameter as an existing event, the existing event expires, and it is replaced by the later event.</p>
 
 <p><span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span></p>
@@ -902,7 +902,7 @@ insert expired events into UniqueIps  ;
 
 <p style="word-wrap: break-word">This query determines the latest events to be included in the window based on the ip and id attributes. When the LoginEvents event stream receives a new event of which the combination of values for the ip and id attributes matches that of an existing event in the window, the existing event expires and it is replaced with the new event. The expired events which have been expired as a result of being replaced by a newer event are directed to the uniqueIps output stream.</p>
 
-<h3 id="externaltimebatch-window">externalTimeBatch <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
+<h3 id="externaltimebatch-window">externalTimeBatch <em><a target="_blank" href="https://siddhi.io/en/v4.x/docs/query-guide/#window">(Window)</a></em></h3>
 <p style="word-wrap: break-word">This is a batch (tumbling) time window that is determined based on external time (i.e., time stamps specified via an attribute in the events). It holds the latest unique events that arrived during the last window time period. The unique events are determined based on the value for a specified unique key parameter. When a new event arrives within the time window with a value for the unique key parameter that is the same as that of an existing event in the window, the existing event expires and it is replaced by the later event.</p>
 
 <p><span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span></p>
@@ -978,7 +978,7 @@ insert into UniqueIps ;
 
 <p style="word-wrap: break-word">In this query, the window holds the latest unique events that arrive from the LoginEvent stream during each second. The latest events are determined based on the external time stamp. At a given time, all the events held in the window has a unique values for the ip and monotonically increasing values for timestamp attributes. The events in the window are inserted into the UniqueIps output stream. The system waits for 2 seconds for the arrival of a new event before flushing the current batch.</p>
 
-<h3 id="first-window">first <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
+<h3 id="first-window">first <em><a target="_blank" href="https://siddhi.io/en/v4.x/docs/query-guide/#window">(Window)</a></em></h3>
 <p style="word-wrap: break-word">This is a window that holds only the first unique events that are unique according to the unique key parameter. When a new event arrives with a key that is already in the window, that event is not processed by the window.</p>
 
 <p><span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span></p>
@@ -1013,7 +1013,7 @@ insert into UniqueIps ;
 
 <p style="word-wrap: break-word">This returns the first unique items that arrive from the LoginEvents stream, and inserts them into the UniqueIps stream. The unique events those with a unique value for the ip attribute.</p>
 
-<h3 id="firstlengthbatch-window">firstLengthBatch <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
+<h3 id="firstlengthbatch-window">firstLengthBatch <em><a target="_blank" href="https://siddhi.io/en/v4.x/docs/query-guide/#window">(Window)</a></em></h3>
 <p style="word-wrap: break-word">This is a batch (tumbling) window that holds a specific number of unique events (depending on which events arrive first). The unique events are selected based on a specific parameter that is considered as the unique key. When a new event arrives with a value for the unique key parameter that matches the same of an existing event in the window, that event is not processed by the window.</p>
 
 <p><span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span></p>
@@ -1056,7 +1056,7 @@ insert all events into OutputStream ;
 
 <p style="word-wrap: break-word">The window in this configuration holds the first unique events from the CseEventStream steam every second, and outputs them all into the the OutputStream stream. All the events in a window during a given second should have a unique value for the symbol attribute.</p>
 
-<h3 id="firsttimebatch-window">firstTimeBatch <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
+<h3 id="firsttimebatch-window">firstTimeBatch <em><a target="_blank" href="https://siddhi.io/en/v4.x/docs/query-guide/#window">(Window)</a></em></h3>
 <p style="word-wrap: break-word">A batch (tumbling) time window that holds first unique events according to the unique key parameter that have arrived during window time period and gets updated for each window time period. When a new event arrives with a key which is already in the window, that event is not processed by the window.</p>
 
 <p><span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span></p>
@@ -1108,7 +1108,7 @@ insert all events into OutputStream ;
 
 <p style="word-wrap: break-word">This will hold first unique events arrived from the cseEventStream in every second based on the symbolas a batch and out put all events to outputStream </p>
 
-<h3 id="length-window">length <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
+<h3 id="length-window">length <em><a target="_blank" href="https://siddhi.io/en/v4.x/docs/query-guide/#window">(Window)</a></em></h3>
 <p style="word-wrap: break-word">This is a sliding length window that holds the latest window length unique events according to the unique key parameter and gets updated for each event arrival and expiry. When a new event arrives with the key that is already there in the window, then the previous event is expired and new event is kept within the window.</p>
 
 <p><span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span></p>
@@ -1152,7 +1152,7 @@ insert all events into OutputStream ;
 
 <p style="word-wrap: break-word">In this configuration, the window holds the latest 10 unique events. The latest events are selected based on the symbol attribute. When the CseEventStream receives an event of which the value for the symbol attribute is the same as that of an existing event in the window, the existing event is replaced by the new event. All the events are returned to the OutputStream event stream once an event is expired or added to the window.</p>
 
-<h3 id="lengthbatch-window">lengthBatch <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
+<h3 id="lengthbatch-window">lengthBatch <em><a target="_blank" href="https://siddhi.io/en/v4.x/docs/query-guide/#window">(Window)</a></em></h3>
 <p style="word-wrap: break-word">This is a batch (tumbling) window that holds a specified number of latest unique events. The unique events are determined based on the value for a specified unique key parameter. The window is updated for every window length (i.e., for the last set of events of the specified number in a tumbling manner). When a new event that arrives within the a window length has the same value for the unique key parameter as an existing event is the window, the previous event is replaced by the new event.</p>
 
 <p><span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span></p>
@@ -1197,7 +1197,7 @@ insert expired events into OutputStream ;
 
 <p style="word-wrap: break-word">In this query, the window at any give time holds the last 10 unique events from the CseEventStream stream. Each of the 10 events within the window at a given time has a unique value for the symbol attribute. If a new event has the same value for the symbol attribute as an existing event within the window length, the existing event expires and it is replaced by the new event. The query returns expired individual events as well as expired batches of events to the OutputStream stream.</p>
 
-<h3 id="time-window">time <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
+<h3 id="time-window">time <em><a target="_blank" href="https://siddhi.io/en/v4.x/docs/query-guide/#window">(Window)</a></em></h3>
 <p style="word-wrap: break-word">This is a sliding time window that holds the latest unique events that arrived during the last window time period. The unique events are determined based on the value for a specified unique key parameter. The window is updated with each event arrival and expiry. When a new event that arrives within a window time period has the same value for the unique key parameter as an existing event in the window, the previous event is replaced by the later event.</p>
 
 <p><span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span></p>
@@ -1241,7 +1241,7 @@ insert expired events into OutputStream ;
 
 <p style="word-wrap: break-word">In this query, the window holds the latest unique events that arrived within the last second from the CseEventStream, and returns the expired events to the OutputStream stream. During any given second, each event in the window should have a unique value for the symbol attribute. If a new event that arrives within the same second has the same value for the symbol attribute as an existing event in the window, the existing event expires.</p>
 
-<h3 id="timebatch-window">timeBatch <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
+<h3 id="timebatch-window">timeBatch <em><a target="_blank" href="https://siddhi.io/en/v4.x/docs/query-guide/#window">(Window)</a></em></h3>
 <p style="word-wrap: break-word">This is a batch (tumbling) time window that is updated with the latest events based on a unique key parameter. If a new event that arrives within the window time period has a value for the key parameter which matches that of an existing event, the existing event expires and it is replaced by the later event. </p>
 
 <p><span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span></p>
@@ -1294,7 +1294,7 @@ insert all events into OutputStream ;
 
 <p style="word-wrap: break-word">This window holds the latest unique events that arrive from the CseEventStream at a given time, and returns all evens to the OutputStream stream. It is updated every second based on the latest values for the symbol attribute.</p>
 
-<h3 id="timelengthbatch-window">timeLengthBatch <em><a target="_blank" href="https://wso2.github.io/siddhi/documentation/siddhi-4.0/#window">(Window)</a></em></h3>
+<h3 id="timelengthbatch-window">timeLengthBatch <em><a target="_blank" href="https://siddhi.io/en/v4.x/docs/query-guide/#window">(Window)</a></em></h3>
 <p style="word-wrap: break-word">This is a batch (tumbling) time length window that is updated with the latest events based on a unique key parameter. The window will tumble upon elapse of the time window or when length number of unique events have arrived. If a new event that arrives within the window period has a value for the key parameter which matches that of an existing event, the existing event expires and it is replaced by the later event. </p>
 
 <p><span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span></p>
