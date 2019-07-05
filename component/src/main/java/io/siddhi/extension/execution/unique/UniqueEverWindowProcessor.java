@@ -63,15 +63,13 @@ import static java.util.Collections.singletonMap;
 @Extension(
         name = "ever",
         namespace = "unique",
-        description = "This is a window that is updated with the latest events based on a unique key parameter."
-                + " When a new event arrives with the same value for the unique key parameter"
-                + " as the existing event, the existing event expires, "
-                + "and is replaced with the latest one.",
+        description = "Window that retains the latest events based on a given unique key. " +
+                "When a new event arrives with the same key it replaces the one exist in the window.",
 
         parameters = {
                 @Parameter(name = "unique.key",
-                        description = "The attribute that should be checked for uniqueness."
-                                + "If multiple attributes need to be checked, we can specify them "
+                        description = "The attribute used to checked for uniqueness. "
+                                + "If multiple attributes need to be checked, they can be specified "
                                 + "as a comma-separated list.",
                         type = {DataType.INT, DataType.LONG, DataType.FLOAT,
                                 DataType.BOOL, DataType.DOUBLE, DataType.STRING},
@@ -83,10 +81,10 @@ import static java.util.Collections.singletonMap;
         },
         examples = {
                 @Example(
-                        syntax = "define stream LoginEvents (timeStamp long, ip string) ;\n" +
+                        syntax = "define stream LoginEvents (timeStamp long, ip string);\n\n" +
                                 "from LoginEvents#window.unique:ever(ip)\n" +
-                                "select count(ip) as ipCount, ip \n" +
-                                "insert all events into UniqueIps  ;",
+                                "select count(ip) as ipCount, ip\n" +
+                                "insert all events into UniqueIps;",
 
                         description = "The above query determines the latest events that have arrived "
                                 + "from the 'LoginEvents' stream, based on the 'ip' attribute. "
@@ -96,10 +94,10 @@ import static java.util.Collections.singletonMap;
 
                 ),
                 @Example(
-                        syntax = "define stream LoginEvents (timeStamp long, ip string , id string) ;\n" +
+                        syntax = "define stream LoginEvents (timeStamp long, ip string , id string);\n\n" +
                                 "from LoginEvents#window.unique:ever(ip, id)\n" +
                                 "select count(ip) as ipCount, ip , id \n" +
-                                "insert expired events into UniqueIps  ;",
+                                "insert expired events into UniqueIps;",
 
                         description = "This query determines the latest events to be included in the window "
                                 + "based on the ip and id attributes. When the 'LoginEvents' event stream receives"
@@ -183,7 +181,8 @@ public class UniqueEverWindowProcessor extends WindowProcessor<UniqueEverWindowP
         StreamEvent streamEvent = null;
         try {
             if (compiledCondition instanceof Operator) {
-                streamEvent = ((Operator) compiledCondition).find(matchingEvent, state.map.values(), streamEventCloner);
+                streamEvent = ((Operator) compiledCondition).find(matchingEvent, state.map.values(),
+                        streamEventCloner);
             }
         } finally {
             stateHolder.returnState(state);

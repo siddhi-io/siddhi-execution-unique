@@ -118,7 +118,7 @@ import java.util.Map;
         },
         examples = {
                 @Example(
-                        syntax = "define stream LoginEvents (timestamp long, ip string) ;\n" +
+                        syntax = "define stream LoginEvents (timestamp long, ip string);\n\n" +
                                 "from LoginEvents#window.unique:externalTimeBatch(ip, timestamp, 1 sec, 0, 2 sec) \n" +
                                 "select timestamp, ip, count() as total\n" +
                                 "insert into UniqueIps ;",

@@ -83,10 +83,10 @@ import java.util.concurrent.ConcurrentHashMap;
                 @ParameterOverload(parameterNames = {"unique.key", "window.length"})
         },
         examples = @Example(
-                syntax = "define stream CseEventStream (symbol string, price float, volume int)\n" +
+                syntax = "define stream CseEventStream (symbol string, price float, volume int)\n\n" +
                         "from CseEventStream#window.unique:length(symbol,10)\n" +
                         "select symbol, price, volume\n" +
-                        "insert all events into OutputStream ;",
+                        "insert all events into OutputStream;",
 
                 description = "In this configuration, the window holds the latest 10 unique events."
                         + " The latest events are selected based on the symbol attribute. "

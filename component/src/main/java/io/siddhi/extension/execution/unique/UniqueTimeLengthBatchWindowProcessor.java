@@ -102,7 +102,7 @@ import java.util.Map;
                         syntax = "define stream CseEventStream (symbol string, price float, volume int)\n\n" +
                                 "from CseEventStream#window.unique:timeLengthBatch(symbol, 1 sec, 20)\n" +
                                 "select symbol, price, volume\n" +
-                                "insert all events into OutputStream ;",
+                                "insert all events into OutputStream;",
 
                         description = "This window holds the latest unique events that arrive from the 'CseEventStream'"
                                 + " at a given time, and returns all the events to the 'OutputStream' stream. "
