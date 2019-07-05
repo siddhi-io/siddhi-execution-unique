@@ -88,7 +88,7 @@ import java.util.concurrent.ConcurrentMap;
         },
         examples = {
                 @Example(
-                        syntax = "define stream CseEventStream (symbol string, price float, volume int)\n" +
+                        syntax = "define stream CseEventStream (symbol string, price float, volume int)\n\n" +
                                 "from CseEventStream#window.unique:time(symbol, 1 sec)\n" +
                                 "select symbol, price, volume\n" +
                                 "insert expired events into OutputStream ;",

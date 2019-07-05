@@ -64,7 +64,7 @@ import java.util.Map;
         },
         examples = {
                 @Example(
-                        syntax = "define stream CseEventStream (symbol string, price float, volume int)\n" +
+                        syntax = "define stream CseEventStream (symbol string, price float, volume int)\n\n" +
                                 "from CseEventStream#window.unique:firstTimeBatch(symbol,1 sec)\n " +
                                 "select symbol, price, volume\n" +
                                 "insert all events into OutputStream ;",

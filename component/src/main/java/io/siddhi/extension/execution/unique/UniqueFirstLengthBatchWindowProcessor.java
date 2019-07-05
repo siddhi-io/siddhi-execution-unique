@@ -58,7 +58,7 @@ import java.util.Map;
         },
         examples = {
                 @Example(
-                        syntax = "define window CseEventWindow (symbol string, price float, volume int) " +
+                        syntax = "define window CseEventWindow (symbol string, price float, volume int)\n\n" +
                                 "from CseEventStream#window.unique:firstLengthBatch(symbol, 10)\n" +
                                 "select symbol, price, volume\n" +
                                 "insert all events into OutputStream ;",
