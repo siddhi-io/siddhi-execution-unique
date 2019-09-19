@@ -63,14 +63,14 @@ import static java.util.Collections.singletonMap;
 @Extension(
         name = "ever",
         namespace = "unique",
-        description = "Window that retains the latest events based on a given unique key. " +
-                "When a new event arrives with the same key it replaces the one exist in the window.",
+        description = "Window that retains the latest events based on a given unique keys. " +
+                "When a new event arrives with the same key it replaces the one that exist in the window." +
+                "<b>This function is not recommended to be used when the maximum number of unique attributes " +
+                "are undefined, as there is a risk of system going out to memory</b>.",
 
         parameters = {
                 @Parameter(name = "unique.key",
-                        description = "The attribute used to checked for uniqueness. "
-                                + "If multiple attributes need to be checked, they can be specified "
-                                + "as a comma-separated list.",
+                        description = "The attribute used to checked for uniqueness.",
                         type = {DataType.INT, DataType.LONG, DataType.FLOAT,
                                 DataType.BOOL, DataType.DOUBLE, DataType.STRING},
                         dynamic = true),
@@ -81,32 +81,40 @@ import static java.util.Collections.singletonMap;
         },
         examples = {
                 @Example(
-                        syntax = "define stream LoginEvents (timeStamp long, ip string);\n\n" +
+                        syntax = "define stream LoginEvents (timestamp long, ip string);\n\n" +
                                 "from LoginEvents#window.unique:ever(ip)\n" +
-                                "select count(ip) as ipCount, ip\n" +
-                                "insert all events into UniqueIps;",
+                                "select count(ip) as ipCount\n" +
+                                "insert events into UniqueIps;",
 
-                        description = "The above query determines the latest events that have arrived "
-                                + "from the 'LoginEvents' stream, based on the 'ip' attribute. "
-                                + "At a given time, all the events held in the window should have a unique value "
-                                + "for the ip attribute. All the processed events are directed "
-                                + "to the 'UniqueIps' output stream with 'ip' and 'ipCount' attributes."
-
+                        description = "Query collects all unique events based on the `ip` attribute by " +
+                                "retaining the latest unique events from the `LoginEvents` stream. " +
+                                "Then the query counts the unique `ip`s arrived so far and outputs the `ipCount`" +
+                                " via the `UniqueIps` stream."
                 ),
                 @Example(
-                        syntax = "define stream LoginEvents (timeStamp long, ip string , id string);\n\n" +
-                                "from LoginEvents#window.unique:ever(ip, id)\n" +
-                                "select count(ip) as ipCount, ip , id \n" +
-                                "insert expired events into UniqueIps;",
+                        syntax = "define stream DriverChangeStream (trainID string, driver string);\n\n" +
+                                "from DriverChangeStream#window.unique:ever(trainID)\n" +
+                                "select trainID, driver\n" +
+                                "insert expired events into PreviousDriverChangeStream;",
 
-                        description = "This query determines the latest events to be included in the window "
-                                + "based on the ip and id attributes. When the 'LoginEvents' event stream receives"
-                                + " a new event of which the combination of values for the ip and id attributes "
-                                + "matches that of an existing event in the window, the existing event expires"
-                                + " and it is replaced with the new event. The expired events "
-                                + "which have been expired"
-                                + " as a result of being replaced by a newer event"
-                                + " are directed to the 'uniqueIps' output stream."
+                        description = "Query collects all unique events based on the `trainID` attribute by " +
+                                "retaining the latest unique events from the `DriverChangeStream` stream. " +
+                                "The query outputs the previous unique event stored in the window as the " +
+                                "expired events are emitted via `PreviousDriverChangeStream` stream."
+                ),
+                @Example(
+                        syntax = "define stream StockStream (symbol string, price float);\n" +
+                                "define stream PriceRequestStream(symbol string);\n" +
+                                "\n" +
+                                "from StockStream#window.unique:ever(symbol) as s join PriceRequestStream as p\n" +
+                                "on s.symbol == p.symbol \n" +
+                                "select s.symbol as symbol, s.price as price \n" +
+                                "insert events into PriceResponseStream;",
+
+                        description = "Query stores the last unique event for each `symbol` attribute of " +
+                                "`StockStream` stream, and joins them with events arriving on the " +
+                                "`PriceRequestStream` for equal `symbol` attributes to fetch the latest " +
+                                "`price` for each requested `symbol` and output via `PriceResponseStream` stream."
                 )
         }
 )
