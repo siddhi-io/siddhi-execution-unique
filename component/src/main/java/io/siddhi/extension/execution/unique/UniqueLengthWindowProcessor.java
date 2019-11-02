@@ -76,8 +76,7 @@ import java.util.concurrent.ConcurrentHashMap;
                 @Parameter(name = "window.length",
                         description = "The number of events that should be "
                                 + "included in a sliding length window.",
-                        type = {DataType.INT},
-                        dynamic = true)
+                        type = {DataType.INT})
         },
         parameterOverloads = {
                 @ParameterOverload(parameterNames = {"unique.key", "window.length"})

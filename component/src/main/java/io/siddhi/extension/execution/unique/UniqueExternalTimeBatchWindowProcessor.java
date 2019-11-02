@@ -86,7 +86,8 @@ import java.util.Map;
                 @Parameter(name = "time.stamp",
                         description = " The time which the window determines as the current time and acts upon."
                                 + " The value of this parameter should be monotonically increasing.",
-                        type = { DataType.LONG}),
+                        type = { DataType.LONG},
+                        dynamic = true),
                 @Parameter(name = "window.time",
                         description = "The sliding time period for which the window should hold events.",
                         type = {DataType.INT, DataType.LONG}),
@@ -104,7 +105,7 @@ import java.util.Map;
                                 "the current batch") ,
                 @Parameter(name = "replace.time.stamp.with.batch.end.time",
                         description = "Replaces the 'timestamp' value with the corresponding batch end time stamp." ,
-                        type = {DataType.INT, DataType.LONG},
+                        type = {DataType.BOOL},
                         optional = true,
                         defaultValue = "false")
         },

@@ -78,13 +78,11 @@ import java.util.Map;
                         dynamic = true),
                 @Parameter(name = "window.time",
                         description = "The tumbling time period for which the window should hold events.",
-                        type = {DataType.INT, DataType.LONG},
-                        dynamic = true),
+                        type = {DataType.INT, DataType.LONG}),
                 @Parameter(name = "start.time",
                         description = "This specifies an offset in milliseconds in order to start the" +
                                 " window at a time different to the standard time.",
                         type = {DataType.INT, DataType.LONG},
-                        dynamic = true,
                         optional = true,
                         defaultValue = "Timestamp of first event")
         },

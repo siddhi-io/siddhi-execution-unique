@@ -82,8 +82,7 @@ import java.util.concurrent.ConcurrentMap;
                         dynamic = true),
                 @Parameter(name = "window.time",
                         description = "The sliding time period for which the window should hold events.",
-                        type = {DataType.INT, DataType.LONG},
-                        dynamic = true)
+                        type = {DataType.INT, DataType.LONG})
         },
         parameterOverloads = {
                 @ParameterOverload(parameterNames = {"unique.key", "window.time"})
