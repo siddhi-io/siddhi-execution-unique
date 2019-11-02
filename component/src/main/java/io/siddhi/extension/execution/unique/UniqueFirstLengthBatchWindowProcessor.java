@@ -50,8 +50,7 @@ import java.util.Map;
                         dynamic = true),
                 @Parameter(name = "window.length",
                         description = "The number of events the window should tumble.",
-                        type = {DataType.INT},
-                        dynamic = true),
+                        type = {DataType.INT}),
         },
         parameterOverloads = {
                 @ParameterOverload(parameterNames = {"unique.key", "window.length"}),

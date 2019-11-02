@@ -79,19 +79,16 @@ import java.util.Map;
                         dynamic = true),
                 @Parameter(name = "window.time",
                         description = "The sliding time period for which the window should hold the events.",
-                        type = {DataType.INT, DataType.LONG},
-                        dynamic = true),
+                        type = {DataType.INT, DataType.LONG}),
                 @Parameter(name = "start.time",
                         description = "This specifies an offset in milliseconds in order to start the" +
                                 " window at a time different to the standard time.",
                         type = {DataType.INT, DataType.LONG},
-                        dynamic = true,
                         optional = true,
                         defaultValue = "Timestamp of first event"),
                 @Parameter(name = "window.length",
                         description = "The number of events the window should tumble.",
-                        type = {DataType.INT},
-                        dynamic = true)
+                        type = {DataType.INT})
         },
         parameterOverloads = {
                 @ParameterOverload(parameterNames = {"unique.key", "window.time", "window.length"}),
