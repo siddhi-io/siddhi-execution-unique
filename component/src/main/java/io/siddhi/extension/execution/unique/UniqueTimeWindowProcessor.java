@@ -78,10 +78,12 @@ import java.util.concurrent.ConcurrentMap;
                 @Parameter(name = "unique.key",
                         description = "The attribute that should be checked for uniqueness. ",
                         type = {DataType.INT, DataType.LONG, DataType.FLOAT,
-                                DataType.BOOL, DataType.DOUBLE, DataType.STRING}),
+                                DataType.BOOL, DataType.DOUBLE, DataType.STRING},
+                        dynamic = true),
                 @Parameter(name = "window.time",
                         description = "The sliding time period for which the window should hold events.",
-                        type = {DataType.INT, DataType.LONG})
+                        type = {DataType.INT, DataType.LONG},
+                        dynamic = true)
         },
         parameterOverloads = {
                 @ParameterOverload(parameterNames = {"unique.key", "window.time"})
